@@ -1,4 +1,4 @@
-const CACHE_NAME = "salah-times-v1";
+const CACHE_NAME = "salah-times-v2";
 const APP_ASSETS = [
   "./",
   "./salah_times.html",
@@ -31,6 +31,19 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
 
   if (requestUrl.origin !== self.location.origin) {
+    return;
+  }
+
+  if (event.request.mode === "navigate" || event.request.destination === "document") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseCopy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseCopy));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 
