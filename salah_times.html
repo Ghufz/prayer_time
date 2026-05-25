@@ -86,7 +86,8 @@
       font-weight: 650;
     }
 
-    select {
+    select,
+    input {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -97,8 +98,18 @@
       box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
     }
 
+    .custom-city {
+      display: grid;
+      gap: 8px;
+    }
+
+    .custom-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
     button {
-      display: none;
       width: 100%;
       border: 0;
       border-radius: 8px;
@@ -110,8 +121,16 @@
       padding: 12px 14px;
     }
 
-    button.available {
-      display: block;
+    .install-help {
+      margin: -2px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .custom-row button {
+      width: auto;
+      min-width: 94px;
     }
 
     button:disabled {
@@ -247,6 +266,10 @@
         padding: 14px;
       }
 
+      .custom-row {
+        grid-template-columns: 1fr;
+      }
+
       .remaining {
         white-space: normal;
       }
@@ -266,7 +289,15 @@
           <label for="city-select">Select city</label>
           <select id="city-select" aria-label="Select city"></select>
         </div>
-        <button id="install-button" type="button">Install App</button>
+        <div class="custom-city">
+          <label for="custom-city-input">Other city</label>
+          <div class="custom-row">
+            <input id="custom-city-input" type="text" placeholder="City, India" autocomplete="address-level2">
+            <button id="custom-city-button" type="button">Load</button>
+          </div>
+        </div>
+        <button id="install-button" type="button" disabled>Install App</button>
+        <p class="install-help" id="install-help">Install is available after opening the app from an HTTPS URL.</p>
       </div>
     </section>
 
@@ -306,27 +337,110 @@
   <script>
     const API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress";
     const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
-    const CITIES = [
-      "Hyderabad, India",
-      "Makkah, Saudi Arabia",
-      "Madinah, Saudi Arabia",
-      "Dubai, UAE",
-      "Doha, Qatar",
-      "Karachi, Pakistan",
-      "Delhi, India",
-      "Mumbai, India",
-      "London, UK",
-      "New York, USA",
-      "Chicago, USA",
-      "Dallas, USA",
-      "Los Angeles, USA",
-      "Istanbul, Turkey",
-      "Kuala Lumpur, Malaysia",
-      "Singapore"
+    const CITY_GROUPS = [
+      {
+        label: "Indian cities",
+        cities: [
+          "Hyderabad, India",
+          "Delhi, India",
+          "Mumbai, India",
+          "Bengaluru, India",
+          "Chennai, India",
+          "Kolkata, India",
+          "Ahmedabad, India",
+          "Pune, India",
+          "Surat, India",
+          "Jaipur, India",
+          "Lucknow, India",
+          "Kanpur, India",
+          "Nagpur, India",
+          "Indore, India",
+          "Bhopal, India",
+          "Patna, India",
+          "Samastipur, India",
+          "Darbhanga, India",
+          "Vadodara, India",
+          "Ludhiana, India",
+          "Agra, India",
+          "Nashik, India",
+          "Faridabad, India",
+          "Meerut, India",
+          "Rajkot, India",
+          "Varanasi, India",
+          "Srinagar, India",
+          "Aurangabad, India",
+          "Dhanbad, India",
+          "Amritsar, India",
+          "Navi Mumbai, India",
+          "Prayagraj, India",
+          "Ranchi, India",
+          "Howrah, India",
+          "Coimbatore, India",
+          "Jabalpur, India",
+          "Gwalior, India",
+          "Vijayawada, India",
+          "Jodhpur, India",
+          "Madurai, India",
+          "Raipur, India",
+          "Kota, India",
+          "Guwahati, India",
+          "Chandigarh, India",
+          "Solapur, India",
+          "Hubballi, India",
+          "Mysuru, India",
+          "Tiruchirappalli, India",
+          "Bareilly, India",
+          "Moradabad, India",
+          "Gurugram, India",
+          "Aligarh, India",
+          "Jalandhar, India",
+          "Bhubaneswar, India",
+          "Salem, India",
+          "Warangal, India",
+          "Guntur, India",
+          "Noida, India",
+          "Dehradun, India",
+          "Kochi, India",
+          "Kozhikode, India",
+          "Thiruvananthapuram, India",
+          "Mangaluru, India",
+          "Visakhapatnam, India",
+          "Vellore, India",
+          "Tirupati, India",
+          "Ajmer, India",
+          "Udaipur, India",
+          "Jammu, India",
+          "Shimla, India",
+          "Panaji, India"
+        ]
+      },
+      {
+        label: "International cities",
+        cities: [
+          "Makkah, Saudi Arabia",
+          "Madinah, Saudi Arabia",
+          "Dubai, UAE",
+          "Doha, Qatar",
+          "Karachi, Pakistan",
+          "London, UK",
+          "New York, USA",
+          "Chicago, USA",
+          "Dallas, USA",
+          "Los Angeles, USA",
+          "Istanbul, Turkey",
+          "Kuala Lumpur, Malaysia",
+          "Singapore"
+        ]
+      }
     ];
+    const CITIES = CITY_GROUPS.flatMap((group) => group.cities);
+    const DEFAULT_CITY = "Bengaluru, India";
 
     const citySelect = document.querySelector("#city-select");
+    const customCityInput = document.querySelector("#custom-city-input");
+    const customCityButton = document.querySelector("#custom-city-button");
     const installButton = document.querySelector("#install-button");
+    const installHelp = document.querySelector("#install-help");
     const locationLine = document.querySelector("#location-line");
     const dateLine = document.querySelector("#date-line");
     const timesBody = document.querySelector("#times-body");
@@ -522,23 +636,53 @@
       }
     }
 
-    function init() {
-      for (const city of CITIES) {
-        const option = document.createElement("option");
-        option.value = city;
-        option.textContent = city;
-        citySelect.appendChild(option);
+    function loadCustomCity() {
+      const city = customCityInput.value.trim();
+      if (!city) {
+        customCityInput.focus();
+        return;
       }
 
-      citySelect.addEventListener("change", () => loadCity(citySelect.value));
+      citySelect.value = "";
+      loadCity(city);
+    }
+
+    function init() {
+      for (const group of CITY_GROUPS) {
+        const optionGroup = document.createElement("optgroup");
+        optionGroup.label = group.label;
+
+        for (const city of group.cities) {
+          const option = document.createElement("option");
+          option.value = city;
+          option.textContent = city;
+          optionGroup.appendChild(option);
+        }
+
+        citySelect.appendChild(optionGroup);
+      }
+
+      citySelect.addEventListener("change", () => {
+        customCityInput.value = "";
+        loadCity(citySelect.value);
+      });
+      customCityButton.addEventListener("click", loadCustomCity);
+      customCityInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          loadCustomCity();
+        }
+      });
       installButton.addEventListener("click", installApp);
-      citySelect.value = CITIES[0];
+      citySelect.value = DEFAULT_CITY;
       loadCity(citySelect.value);
       registerServiceWorker();
+      installHelp.textContent = getInstallHelpText();
     }
 
     async function installApp() {
       if (!deferredInstallPrompt) {
+        installHelp.textContent = getInstallHelpText();
         return;
       }
 
@@ -546,12 +690,13 @@
       deferredInstallPrompt.prompt();
       const result = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
-      installButton.classList.remove("available");
-      installButton.disabled = false;
+      installButton.disabled = true;
 
       if (result.outcome === "accepted") {
         messageLine.textContent = "Salah Times was added to your home screen.";
         messageLine.classList.remove("error");
+      } else {
+        installHelp.textContent = "Use your browser menu and choose Add to Home Screen if the prompt does not reopen.";
       }
     }
 
@@ -567,16 +712,29 @@
       }
     }
 
+    function getInstallHelpText() {
+      if (location.protocol === "file:") {
+        return "This page is open as a local file. Host it on GitHub Pages, then open the HTTPS link on your phone to install.";
+      }
+
+      if (!("serviceWorker" in navigator)) {
+        return "Use your browser menu and choose Add to Home Screen.";
+      }
+
+      return "If no prompt appears, use your browser menu and choose Add to Home Screen.";
+    }
+
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       deferredInstallPrompt = event;
-      installButton.classList.add("available");
       installButton.disabled = false;
+      installHelp.textContent = "Tap Install App to add Salah Times to your home screen.";
     });
 
     window.addEventListener("appinstalled", () => {
       deferredInstallPrompt = null;
-      installButton.classList.remove("available");
+      installButton.disabled = true;
+      installHelp.textContent = "Salah Times is installed.";
       messageLine.textContent = "Salah Times was added to your home screen.";
       messageLine.classList.remove("error");
     });
