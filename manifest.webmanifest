@@ -1,0 +1,26 @@
+{
+  "id": "./salah-times",
+  "name": "Salah Times",
+  "short_name": "Salah",
+  "description": "Five daily salah times with the upcoming prayer highlighted.",
+  "start_url": "./salah_times.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f6f7f2",
+  "theme_color": "#1b806a",
+  "icons": [
+    {
+      "src": "icons/salah-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/salah-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

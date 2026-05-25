@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1b806a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Salah Times">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/salah-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/salah-icon.svg">
+  <title>Salah Times</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f2;
+      --panel: #ffffff;
+      --ink: #1d2a2a;
+      --muted: #637171;
+      --line: #dbe2d7;
+      --accent: #1b806a;
+      --accent-soft: #e7f4ef;
+      --warn: #9b5a12;
+      --warn-soft: #fff3dc;
+      --shadow: 0 16px 50px rgba(26, 45, 45, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(135deg, rgba(27, 128, 106, 0.11), transparent 34%),
+        linear-gradient(315deg, rgba(34, 87, 122, 0.1), transparent 38%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    main {
+      width: min(980px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 38px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      line-height: 1.04;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+      min-width: min(340px, 100%);
+    }
+
+    .controls {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--ink);
+      font: inherit;
+      padding: 12px 14px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    button {
+      display: none;
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 750;
+      padding: 12px 14px;
+    }
+
+    button.available {
+      display: block;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status-bar strong {
+      color: var(--ink);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 16px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: #fbfcf8;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr.upcoming {
+      background: var(--accent-soft);
+    }
+
+    .prayer-name {
+      font-weight: 750;
+    }
+
+    .time-cell {
+      font-variant-numeric: tabular-nums;
+      font-size: 1.08rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      color: var(--accent);
+      background: rgba(27, 128, 106, 0.12);
+      font-size: 0.85rem;
+      font-weight: 750;
+    }
+
+    .next {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 16px;
+      border: 1px solid rgba(155, 90, 18, 0.2);
+      border-radius: 8px;
+      background: var(--warn-soft);
+      padding: 16px 18px;
+      color: #4d3518;
+    }
+
+    .next strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--warn);
+      font-size: 0.86rem;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .remaining {
+      white-space: nowrap;
+      color: var(--warn);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .message {
+      margin-top: 14px;
+      color: var(--muted);
+    }
+
+    .error {
+      color: #9d1f2e;
+    }
+
+    @media (max-width: 720px) {
+      main {
+        width: min(100% - 22px, 980px);
+        padding: 24px 0;
+      }
+
+      .topbar,
+      .status-bar,
+      .next {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      th,
+      td {
+        padding: 14px;
+      }
+
+      .remaining {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="topbar" aria-labelledby="page-title">
+      <div>
+        <h1 id="page-title">Salah Times</h1>
+        <p class="subtitle">Five daily prayers with the upcoming salah highlighted.</p>
+      </div>
+
+      <div class="actions">
+        <div class="controls">
+          <label for="city-select">Select city</label>
+          <select id="city-select" aria-label="Select city"></select>
+        </div>
+        <button id="install-button" type="button">Install App</button>
+      </div>
+    </section>
+
+    <section class="status-bar" aria-live="polite">
+      <div id="location-line"><strong>Loading...</strong></div>
+      <div id="date-line"></div>
+    </section>
+
+    <section class="table-wrap" aria-label="Salah time table">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Salah</th>
+            <th scope="col">Time</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody id="times-body">
+          <tr>
+            <td colspan="3">Loading salah times...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="next" aria-live="polite">
+      <div>
+        <strong>Upcoming Salah</strong>
+        <div id="next-line">Loading...</div>
+      </div>
+      <div class="remaining" id="remaining-line"></div>
+    </section>
+
+    <p class="message" id="message-line"></p>
+  </main>
+
+  <script>
+    const API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress";
+    const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+    const CITIES = [
+      "Hyderabad, India",
+      "Makkah, Saudi Arabia",
+      "Madinah, Saudi Arabia",
+      "Dubai, UAE",
+      "Doha, Qatar",
+      "Karachi, Pakistan",
+      "Delhi, India",
+      "Mumbai, India",
+      "London, UK",
+      "New York, USA",
+      "Chicago, USA",
+      "Dallas, USA",
+      "Los Angeles, USA",
+      "Istanbul, Turkey",
+      "Kuala Lumpur, Malaysia",
+      "Singapore"
+    ];
+
+    const citySelect = document.querySelector("#city-select");
+    const installButton = document.querySelector("#install-button");
+    const locationLine = document.querySelector("#location-line");
+    const dateLine = document.querySelector("#date-line");
+    const timesBody = document.querySelector("#times-body");
+    const nextLine = document.querySelector("#next-line");
+    const remainingLine = document.querySelector("#remaining-line");
+    const messageLine = document.querySelector("#message-line");
+    let deferredInstallPrompt = null;
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function formatApiDate(date) {
+      return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()}`;
+    }
+
+    function parseApiDate(value) {
+      const [day, month, year] = value.split("-").map(Number);
+      return { day, month, year, key: `${year}-${pad(month)}-${pad(day)}` };
+    }
+
+    function dateKeyToUtcDay(key) {
+      const [year, month, day] = key.split("-").map(Number);
+      return Date.UTC(year, month - 1, day) / 86400000;
+    }
+
+    function getCurrentInTimezone(timezone) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date());
+
+      const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+      const hour = Number(values.hour) === 24 ? 0 : Number(values.hour);
+      return {
+        key: `${values.year}-${values.month}-${values.day}`,
+        minutes: hour * 60 + Number(values.minute),
+        seconds: Number(values.second)
+      };
+    }
+
+    function parseTiming(value) {
+      const match = String(value).match(/(^|\D)([01]?\d|2[0-3]):([0-5]\d)(?!\d)/);
+      if (!match) {
+        return null;
+      }
+      return {
+        hour: Number(match[2]),
+        minute: Number(match[3]),
+        minutes: Number(match[2]) * 60 + Number(match[3])
+      };
+    }
+
+    function formatRemaining(totalMinutes) {
+      if (totalMinutes <= 0) {
+        return "now";
+      }
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours && minutes) {
+        return `in ${hours}h ${minutes}m`;
+      }
+      if (hours) {
+        return `in ${hours}h`;
+      }
+      return `in ${minutes}m`;
+    }
+
+    function formatDayNote(scheduleKey, nowKey) {
+      const diff = dateKeyToUtcDay(scheduleKey) - dateKeyToUtcDay(nowKey);
+      if (diff === 0) {
+        return "";
+      }
+      if (diff === 1) {
+        return " tomorrow";
+      }
+      return ` on ${scheduleKey}`;
+    }
+
+    function findUpcoming(payload) {
+      const data = payload.data;
+      const timezone = data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = getCurrentInTimezone(timezone);
+      const scheduleDate = parseApiDate(data.date.gregorian.date);
+      const dayDiff = dateKeyToUtcDay(scheduleDate.key) - dateKeyToUtcDay(now.key);
+
+      for (const prayer of PRAYERS) {
+        const parsedTime = parseTiming(data.timings[prayer]);
+        if (!parsedTime) {
+          continue;
+        }
+
+        const minutesUntil = dayDiff * 1440 + parsedTime.minutes - now.minutes;
+        if (minutesUntil >= 0) {
+          return {
+            name: prayer,
+            displayTime: data.timings[prayer],
+            scheduleKey: scheduleDate.key,
+            nowKey: now.key,
+            minutesUntil
+          };
+        }
+      }
+
+      return null;
+    }
+
+    async function fetchTimings(address, date) {
+      const params = new URLSearchParams({ address });
+      const response = await fetch(`${API_BASE_URL}/${formatApiDate(date)}?${params}`);
+      const payload = await response.json();
+
+      if (!response.ok || payload.code !== 200 || payload.status !== "OK") {
+        throw new Error(payload.data || payload.status || "Unable to fetch salah times.");
+      }
+
+      return payload;
+    }
+
+    function renderRows(payload, upcoming) {
+      const timings = payload.data.timings;
+      const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
+      timesBody.innerHTML = "";
+
+      for (const prayer of PRAYERS) {
+        const row = document.createElement("tr");
+        const isUpcoming = upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
+        if (isUpcoming) {
+          row.classList.add("upcoming");
+        }
+
+        row.innerHTML = `
+          <td class="prayer-name">${prayer}</td>
+          <td class="time-cell">${timings[prayer] || "-"}</td>
+          <td>${isUpcoming ? '<span class="badge">Upcoming</span>' : ""}</td>
+        `;
+        timesBody.appendChild(row);
+      }
+    }
+
+    function renderSummary(payload, city, upcoming) {
+      const data = payload.data;
+      const method = data.meta.method && data.meta.method.name ? data.meta.method.name : "Auto method";
+      locationLine.innerHTML = `<strong>${city}</strong> · ${data.meta.timezone || "Local timezone"}`;
+      dateLine.textContent = `${data.date.readable} · ${method}`;
+
+      if (!upcoming) {
+        nextLine.textContent = "No upcoming salah found in this schedule.";
+        remainingLine.textContent = "";
+        return;
+      }
+
+      const note = formatDayNote(upcoming.scheduleKey, upcoming.nowKey);
+      nextLine.textContent = `${upcoming.name} at ${upcoming.displayTime}${note}`;
+      remainingLine.textContent = formatRemaining(upcoming.minutesUntil);
+    }
+
+    async function loadCity(city) {
+      timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
+      locationLine.innerHTML = `<strong>${city}</strong>`;
+      dateLine.textContent = "";
+      nextLine.textContent = "Loading...";
+      remainingLine.textContent = "";
+      messageLine.textContent = "";
+      messageLine.classList.remove("error");
+
+      try {
+        const todayPayload = await fetchTimings(city, new Date());
+        let upcoming = findUpcoming(todayPayload);
+
+        if (!upcoming) {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          const tomorrowPayload = await fetchTimings(city, tomorrow);
+          upcoming = findUpcoming(tomorrowPayload);
+        }
+
+        renderRows(todayPayload, upcoming);
+        renderSummary(todayPayload, city, upcoming);
+        messageLine.textContent = "Times are provided by AlAdhan and may differ from local mosque calendars.";
+      } catch (error) {
+        timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
+        nextLine.textContent = "Please try another city or check your connection.";
+        messageLine.textContent = error.message;
+        messageLine.classList.add("error");
+      }
+    }
+
+    function init() {
+      for (const city of CITIES) {
+        const option = document.createElement("option");
+        option.value = city;
+        option.textContent = city;
+        citySelect.appendChild(option);
+      }
+
+      citySelect.addEventListener("change", () => loadCity(citySelect.value));
+      installButton.addEventListener("click", installApp);
+      citySelect.value = CITIES[0];
+      loadCity(citySelect.value);
+      registerServiceWorker();
+    }
+
+    async function installApp() {
+      if (!deferredInstallPrompt) {
+        return;
+      }
+
+      installButton.disabled = true;
+      deferredInstallPrompt.prompt();
+      const result = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installButton.classList.remove("available");
+      installButton.disabled = false;
+
+      if (result.outcome === "accepted") {
+        messageLine.textContent = "Salah Times was added to your home screen.";
+        messageLine.classList.remove("error");
+      }
+    }
+
+    async function registerServiceWorker() {
+      if (!("serviceWorker" in navigator) || location.protocol === "file:") {
+        return;
+      }
+
+      try {
+        await navigator.serviceWorker.register("./service-worker.js");
+      } catch (error) {
+        console.warn("Service worker registration failed.", error);
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      installButton.classList.add("available");
+      installButton.disabled = false;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredInstallPrompt = null;
+      installButton.classList.remove("available");
+      messageLine.textContent = "Salah Times was added to your home screen.";
+      messageLine.classList.remove("error");
+    });
+
+    init();
+  </script>
+</body>
+</html>

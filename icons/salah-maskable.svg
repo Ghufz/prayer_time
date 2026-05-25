@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Salah Times maskable icon</title>
+  <rect width="512" height="512" fill="#1b806a"/>
+  <circle cx="256" cy="256" r="198" fill="#207f6c"/>
+  <path d="M256 119c-13 65-67 85-67 146 0 42 30 76 67 76s67-34 67-76c0-61-54-81-67-146Z" fill="#f6f7f2"/>
+  <path d="M151 394h210" fill="none" stroke="#f6f7f2" stroke-width="26" stroke-linecap="round"/>
+  <path d="M190 428h132" fill="none" stroke="#f6f7f2" stroke-width="20" stroke-linecap="round"/>
+</svg>
