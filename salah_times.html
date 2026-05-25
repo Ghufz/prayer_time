@@ -56,8 +56,22 @@
       margin-bottom: 22px;
     }
 
+    .title-block {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      width: 100%;
+    }
+
     h1 {
-      margin: 0 0 6px;
+      margin: 0;
       font-size: clamp(2rem, 5vw, 3.4rem);
       line-height: 1.04;
       letter-spacing: 0;
@@ -87,7 +101,7 @@
     }
 
     select,
-    input {
+    input[type="text"] {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 8px;
@@ -103,13 +117,38 @@
       gap: 8px;
     }
 
+    .custom-toggle {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #7b6b58;
+      cursor: pointer;
+      font-size: 0.93rem;
+      font-weight: 650;
+    }
+
+    .custom-toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
     .custom-row {
-      display: grid;
+      display: none;
       grid-template-columns: minmax(0, 1fr) auto;
       gap: 8px;
     }
 
+    .custom-city.open .custom-row {
+      display: grid;
+    }
+
     button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
       border: 0;
       border-radius: 8px;
@@ -121,16 +160,111 @@
       padding: 12px 14px;
     }
 
+    .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     .install-help {
+      display: none;
       margin: -2px 0 0;
       color: var(--muted);
       font-size: 0.84rem;
       line-height: 1.35;
     }
 
+    #install-button {
+      display: none;
+    }
+
+    #install-button.available {
+      display: inline-flex;
+    }
+
+    #install-help.available {
+      display: block;
+    }
+
     .custom-row button {
       width: auto;
       min-width: 94px;
+    }
+
+    .secondary-button {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+    }
+
+    .settings-control {
+      display: flex;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .settings-gear {
+      width: 44px;
+      min-width: 44px;
+      height: 44px;
+      padding: 0;
+    }
+
+    .settings-panel {
+      display: none;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcf8;
+      padding: 12px;
+    }
+
+    .settings-panel.open {
+      display: grid;
+    }
+
+    .settings-row {
+      display: grid;
+      gap: 3px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+
+    .settings-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .settings-label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 750;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .settings-value {
+      color: var(--ink);
+      font-size: 0.94rem;
+      font-weight: 650;
+      line-height: 1.35;
     }
 
     button:disabled {
@@ -150,6 +284,164 @@
 
     .status-bar strong {
       color: var(--ink);
+    }
+
+    .date-line {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      width: min(430px, 100%);
+    }
+
+    .date-chip {
+      display: grid;
+      gap: 2px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 8px 11px;
+      min-width: 0;
+    }
+
+    .date-chip span {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .date-chip strong {
+      font-size: 0.94rem;
+      line-height: 1.25;
+    }
+
+    .date-chip.gregorian {
+      border-color: #cfe0f2;
+      background: #edf5ff;
+      color: #22577a;
+    }
+
+    .date-chip.hijri {
+      border-color: #ead6ad;
+      background: #fff5df;
+      color: #8a5b18;
+    }
+
+    .sun-panel {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 16px;
+      border: 1px solid #f0d7a8;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #fff9ed, #ffffff);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .sun-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .sun-panel-title {
+      display: grid;
+      gap: 3px;
+    }
+
+    .sun-panel-title strong {
+      color: #8a5b18;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .sun-panel-title span {
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .sun-times {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      min-width: min(300px, 100%);
+    }
+
+    .sun-chip {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 8px 11px;
+    }
+
+    .sun-chip.sunrise {
+      border-color: #f3cf83;
+      background: #fff3d4;
+      color: #8a5b18;
+    }
+
+    .sun-chip.sunset {
+      border-color: #f0b5a1;
+      background: #fff0ec;
+      color: #9d3f2f;
+    }
+
+    .sun-chip span {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .sun-chip strong {
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    .sun-path-wrap {
+      position: relative;
+      min-height: 150px;
+      overflow: hidden;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(237, 245, 255, 0.9), rgba(255, 245, 223, 0.9)),
+        #ffffff;
+    }
+
+    .sun-path {
+      display: block;
+      width: 100%;
+      height: 150px;
+    }
+
+    .sun-arc {
+      stroke: #e9b44c;
+      stroke-width: 4;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .sun-horizon {
+      stroke: rgba(138, 91, 24, 0.26);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .sun-marker {
+      fill: #f5a623;
+      filter: drop-shadow(0 6px 12px rgba(155, 90, 18, 0.3));
+    }
+
+    .sun-marker-halo {
+      fill: rgba(245, 166, 35, 0.18);
+    }
+
+    .sun-progress-text {
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
     .table-wrap {
@@ -186,7 +478,13 @@
     }
 
     tbody tr.upcoming {
+      background: #fff4d8;
+      box-shadow: inset 4px 0 0 #f5a623;
+    }
+
+    tbody tr.current {
       background: var(--accent-soft);
+      box-shadow: inset 4px 0 0 var(--accent);
     }
 
     .prayer-name {
@@ -210,33 +508,57 @@
       font-weight: 750;
     }
 
+    .badge.current {
+      color: var(--accent);
+      background: rgba(27, 128, 106, 0.12);
+    }
+
+    .badge.upcoming {
+      color: #8a5b18;
+      background: rgba(245, 166, 35, 0.2);
+    }
+
     .next {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       margin-top: 16px;
-      border: 1px solid rgba(155, 90, 18, 0.2);
+      border: 1px solid rgba(27, 128, 106, 0.24);
       border-radius: 8px;
-      background: var(--warn-soft);
-      padding: 16px 18px;
-      color: #4d3518;
+      background:
+        linear-gradient(135deg, rgba(27, 128, 106, 0.96), rgba(34, 87, 122, 0.94)),
+        var(--accent);
+      box-shadow: 0 18px 48px rgba(27, 128, 106, 0.24);
+      padding: 20px;
+      color: #ffffff;
     }
 
     .next strong {
       display: block;
-      margin-bottom: 3px;
-      color: var(--warn);
+      margin-bottom: 6px;
+      color: rgba(255, 255, 255, 0.78);
       font-size: 0.86rem;
       letter-spacing: 0.07em;
       text-transform: uppercase;
     }
 
+    #next-line {
+      color: #ffffff;
+      font-size: clamp(1.35rem, 4vw, 2.05rem);
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
     .remaining {
       white-space: nowrap;
-      color: var(--warn);
-      font-weight: 800;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      font-size: clamp(1.15rem, 3vw, 1.65rem);
+      font-weight: 850;
       font-variant-numeric: tabular-nums;
+      padding: 12px 14px;
     }
 
     .message {
@@ -261,17 +583,49 @@
         flex-direction: column;
       }
 
+      .title-row {
+        align-items: start;
+      }
+
       th,
       td {
         padding: 14px;
       }
 
-      .custom-row {
-        grid-template-columns: 1fr;
+      .sun-panel-header {
+        align-items: stretch;
+        flex-direction: column;
       }
 
       .remaining {
         white-space: normal;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .date-line,
+      .sun-times {
+        gap: 6px;
+      }
+
+      .date-chip,
+      .sun-chip {
+        padding: 8px;
+      }
+
+      .date-chip strong,
+      .sun-chip strong {
+        font-size: 0.86rem;
+        overflow-wrap: anywhere;
+      }
+
+      .custom-row button {
+        min-width: 48px;
+        padding-inline: 12px;
+      }
+
+      .custom-row button span {
+        display: none;
       }
     }
   </style>
@@ -279,31 +633,88 @@
 <body>
   <main>
     <section class="topbar" aria-labelledby="page-title">
-      <div>
-        <h1 id="page-title">Salah Times</h1>
-        <p class="subtitle">Five daily prayers with the upcoming salah highlighted.</p>
+      <div class="title-block">
+        <div class="title-row">
+          <h1 id="page-title">Salah Times</h1>
+          <div class="settings-control">
+            <button id="settings-toggle" class="secondary-button settings-gear" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel" title="Settings">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9.67 2h4.66l.52 2.31c.55.21 1.07.51 1.55.9l2.25-.73 2.33 4.04-1.73 1.58c.05.31.08.62.08.94s-.03.63-.08.94l1.73 1.58-2.33 4.04-2.25-.73c-.48.39-1 .69-1.55.9L14.33 22H9.67l-.52-2.31c-.55-.21-1.07-.51-1.55-.9l-2.25.73-2.33-4.04 1.73-1.58a6.1 6.1 0 0 1 0-1.88L3.02 8.52l2.33-4.04 2.25.73c.48-.39 1-.69 1.55-.9L9.67 2Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span class="sr-only">Settings</span>
+            </button>
+          </div>
+        </div>
+        <p class="subtitle">Five daily prayers with current and upcoming salah highlighted.</p>
       </div>
 
       <div class="actions">
+        <div class="settings-panel" id="settings-panel" hidden>
+          <div class="settings-row">
+            <span class="settings-label">Timezone</span>
+            <span class="settings-value" id="timezone-line">Loading...</span>
+          </div>
+        </div>
         <div class="controls">
           <label for="city-select">Select city</label>
           <select id="city-select" aria-label="Select city"></select>
         </div>
         <div class="custom-city">
-          <label for="custom-city-input">Other city</label>
+          <label class="custom-toggle" for="custom-city-toggle">
+            <input id="custom-city-toggle" type="checkbox">
+            <span>My city isn't listed</span>
+          </label>
           <div class="custom-row">
             <input id="custom-city-input" type="text" placeholder="City, India" autocomplete="address-level2">
-            <button id="custom-city-button" type="button">Load</button>
+            <button id="custom-city-button" type="button" aria-label="Search custom city">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <span>Search</span>
+            </button>
           </div>
         </div>
-        <button id="install-button" type="button" disabled>Install App</button>
-        <p class="install-help" id="install-help">Install is available after opening the app from an HTTPS URL.</p>
+        <button id="install-button" type="button">Install App</button>
+        <p class="install-help" id="install-help">Tap Install App to add Salah Times to your home screen.</p>
       </div>
     </section>
 
     <section class="status-bar" aria-live="polite">
       <div id="location-line"><strong>Loading...</strong></div>
-      <div id="date-line"></div>
+      <div class="date-line" id="date-line"></div>
+    </section>
+
+    <section class="sun-panel" aria-label="Sunrise and sunset">
+      <div class="sun-panel-header">
+        <div class="sun-panel-title">
+          <strong>Sun Path</strong>
+          <span id="sun-progress-line">Loading sunrise and sunset...</span>
+        </div>
+        <div class="sun-times">
+          <div class="sun-chip sunrise">
+            <span>Sunrise</span>
+            <strong id="sunrise-line">--:--</strong>
+          </div>
+          <div class="sun-chip sunset">
+            <span>Sunset</span>
+            <strong id="sunset-line">--:--</strong>
+          </div>
+        </div>
+      </div>
+      <div class="sun-path-wrap">
+        <svg class="sun-path" viewBox="0 0 360 150" role="img" aria-labelledby="sun-path-title" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <title id="sun-path-title">Sun path from sunrise to sunset</title>
+          <defs>
+            <path id="sun-arc-path" d="M32 118 C95 16 265 16 328 118"></path>
+          </defs>
+          <line class="sun-horizon" x1="28" y1="118" x2="332" y2="118"></line>
+          <use class="sun-arc" href="#sun-arc-path" xlink:href="#sun-arc-path"></use>
+          <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="118" r="18"></circle>
+          <circle class="sun-marker" id="sun-marker" cx="32" cy="118" r="10"></circle>
+        </svg>
+      </div>
     </section>
 
     <section class="table-wrap" aria-label="Salah time table">
@@ -436,21 +847,37 @@
     const CITIES = CITY_GROUPS.flatMap((group) => group.cities);
     const DEFAULT_CITY = "Bengaluru, India";
 
+    const customCity = document.querySelector(".custom-city");
+    const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
+    const settingsToggle = document.querySelector("#settings-toggle");
+    const settingsPanel = document.querySelector("#settings-panel");
     const installButton = document.querySelector("#install-button");
     const installHelp = document.querySelector("#install-help");
     const locationLine = document.querySelector("#location-line");
     const dateLine = document.querySelector("#date-line");
+    const timezoneLine = document.querySelector("#timezone-line");
+    const sunriseLine = document.querySelector("#sunrise-line");
+    const sunsetLine = document.querySelector("#sunset-line");
+    const sunProgressLine = document.querySelector("#sun-progress-line");
+    const sunMarker = document.querySelector("#sun-marker");
+    const sunMarkerHalo = document.querySelector("#sun-marker-halo");
+    const sunArcPath = document.querySelector("#sun-arc-path");
     const timesBody = document.querySelector("#times-body");
     const nextLine = document.querySelector("#next-line");
     const remainingLine = document.querySelector("#remaining-line");
     const messageLine = document.querySelector("#message-line");
     let deferredInstallPrompt = null;
+    let sunAnimationFrame = null;
 
     function pad(value) {
       return String(value).padStart(2, "0");
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
     }
 
     function formatApiDate(date) {
@@ -516,6 +943,18 @@
       return `in ${minutes}m`;
     }
 
+    function formatSunStatus(progress, sunrise, sunset, now) {
+      if (now.minutes < sunrise.minutes) {
+        return `Sunrise begins at ${sunrise.displayTime}.`;
+      }
+
+      if (now.minutes > sunset.minutes) {
+        return `Sunset completed at ${sunset.displayTime}.`;
+      }
+
+      return `${Math.round(progress * 100)}% of daylight elapsed.`;
+    }
+
     function formatDayNote(scheduleKey, nowKey) {
       const diff = dateKeyToUtcDay(scheduleKey) - dateKeyToUtcDay(nowKey);
       if (diff === 0) {
@@ -525,6 +964,140 @@
         return " tomorrow";
       }
       return ` on ${scheduleKey}`;
+    }
+
+    function formatHijriDate(hijri) {
+      if (!hijri) {
+        return "Unknown Hijri date";
+      }
+
+      const monthNames = [
+        "Muharram",
+        "Safar",
+        "Rabi al-Awwal",
+        "Rabi al-Thani",
+        "Jumada al-Awwal",
+        "Jumada al-Thani",
+        "Rajab",
+        "Shaban",
+        "Ramadan",
+        "Shawwal",
+        "Dhul Qadah",
+        "Dhul Hijjah"
+      ];
+      const monthNumber = Number(hijri.month && hijri.month.number);
+      const monthName = monthNames[monthNumber - 1] || (hijri.month && hijri.month.en) || "";
+      const day = hijri.day || String(hijri.date || "").split("-")[0] || "";
+      const year = hijri.year || String(hijri.date || "").split("-")[2] || "";
+
+      return [day, monthName, year].filter(Boolean).join(" ");
+    }
+
+    function renderLocation(city) {
+      locationLine.textContent = "";
+      const locationName = document.createElement("strong");
+      locationName.textContent = city;
+      locationLine.appendChild(locationName);
+    }
+
+    function renderDateChip(label, value, variant) {
+      const chip = document.createElement("div");
+      chip.className = `date-chip ${variant}`;
+
+      const chipLabel = document.createElement("span");
+      chipLabel.textContent = label;
+
+      const chipValue = document.createElement("strong");
+      chipValue.textContent = value;
+
+      chip.append(chipLabel, chipValue);
+      dateLine.appendChild(chip);
+    }
+
+    function setSunMarkerPosition(progress) {
+      if (!sunArcPath || !sunMarker || !sunMarkerHalo) {
+        return;
+      }
+
+      const safeProgress = clamp(progress, 0, 1);
+      const point = sunArcPath.getPointAtLength(sunArcPath.getTotalLength() * safeProgress);
+      sunMarker.setAttribute("cx", point.x);
+      sunMarker.setAttribute("cy", point.y);
+      sunMarkerHalo.setAttribute("cx", point.x);
+      sunMarkerHalo.setAttribute("cy", point.y);
+    }
+
+    function setSunMarker(progress, animate = false) {
+      const safeProgress = clamp(progress, 0, 1);
+
+      if (sunAnimationFrame) {
+        cancelAnimationFrame(sunAnimationFrame);
+        sunAnimationFrame = null;
+      }
+
+      if (!animate || safeProgress === 0) {
+        setSunMarkerPosition(safeProgress);
+        return;
+      }
+
+      setSunMarkerPosition(0);
+      const duration = 1400;
+      const start = performance.now();
+
+      function step(timestamp) {
+        const elapsed = timestamp - start;
+        const rawProgress = clamp(elapsed / duration, 0, 1);
+        const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
+        setSunMarkerPosition(safeProgress * easedProgress);
+
+        if (rawProgress < 1) {
+          sunAnimationFrame = requestAnimationFrame(step);
+        } else {
+          sunAnimationFrame = null;
+          setSunMarkerPosition(safeProgress);
+        }
+      }
+
+      sunAnimationFrame = requestAnimationFrame(step);
+    }
+
+    function renderSunPath(payload) {
+      const data = payload.data;
+      const sunrise = parseTiming(data.timings.Sunrise);
+      const sunset = parseTiming(data.timings.Sunset || data.timings.Maghrib);
+      const sunriseDisplay = data.timings.Sunrise || "--:--";
+      const sunsetDisplay = data.timings.Sunset || data.timings.Maghrib || "--:--";
+
+      sunriseLine.textContent = sunriseDisplay;
+      sunsetLine.textContent = sunsetDisplay;
+
+      if (!sunrise || !sunset || sunset.minutes <= sunrise.minutes) {
+        sunProgressLine.textContent = "Sunrise or sunset is unavailable for this location.";
+        setSunMarker(0);
+        return;
+      }
+
+      sunrise.displayTime = sunriseDisplay;
+      sunset.displayTime = sunsetDisplay;
+
+      const timezone = data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = getCurrentInTimezone(timezone);
+      const scheduleDate = parseApiDate(data.date.gregorian.date);
+      const dayDiff = dateKeyToUtcDay(scheduleDate.key) - dateKeyToUtcDay(now.key);
+      let progress = 0;
+
+      if (dayDiff < 0) {
+        progress = 1;
+        sunProgressLine.textContent = `Sunset completed at ${sunsetDisplay}.`;
+      } else if (dayDiff > 0) {
+        progress = 0;
+        sunProgressLine.textContent = `Sunrise begins at ${sunriseDisplay}.`;
+      } else {
+        progress = clamp((now.minutes - sunrise.minutes) / (sunset.minutes - sunrise.minutes), 0, 1);
+        sunProgressLine.textContent = formatSunStatus(progress, sunrise, sunset, now);
+      }
+
+      setSunMarker(progress, true);
     }
 
     function findUpcoming(payload) {
@@ -555,6 +1128,33 @@
       return null;
     }
 
+    function findCurrentSalah(payload) {
+      const data = payload.data;
+      const timezone = data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = getCurrentInTimezone(timezone);
+      const scheduleDate = parseApiDate(data.date.gregorian.date);
+
+      if (scheduleDate.key !== now.key) {
+        return null;
+      }
+
+      let current = null;
+      for (const prayer of PRAYERS) {
+        const parsedTime = parseTiming(data.timings[prayer]);
+        if (!parsedTime || parsedTime.minutes > now.minutes) {
+          continue;
+        }
+
+        current = {
+          name: prayer,
+          displayTime: data.timings[prayer],
+          scheduleKey: scheduleDate.key
+        };
+      }
+
+      return current;
+    }
+
     async function fetchTimings(address, date) {
       const params = new URLSearchParams({ address });
       const response = await fetch(`${API_BASE_URL}/${formatApiDate(date)}?${params}`);
@@ -567,22 +1167,30 @@
       return payload;
     }
 
-    function renderRows(payload, upcoming) {
+    function renderRows(payload, upcoming, current) {
       const timings = payload.data.timings;
       const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
       timesBody.innerHTML = "";
 
       for (const prayer of PRAYERS) {
         const row = document.createElement("tr");
+        const isCurrent = current && current.name === prayer && current.scheduleKey === scheduleKey;
         const isUpcoming = upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
-        if (isUpcoming) {
+        if (isCurrent) {
+          row.classList.add("current");
+        } else if (isUpcoming) {
           row.classList.add("upcoming");
         }
+        const status = isCurrent
+          ? '<span class="badge current">Current</span>'
+          : isUpcoming
+            ? '<span class="badge upcoming">Upcoming</span>'
+            : "";
 
         row.innerHTML = `
           <td class="prayer-name">${prayer}</td>
           <td class="time-cell">${timings[prayer] || "-"}</td>
-          <td>${isUpcoming ? '<span class="badge">Upcoming</span>' : ""}</td>
+          <td>${status}</td>
         `;
         timesBody.appendChild(row);
       }
@@ -590,9 +1198,13 @@
 
     function renderSummary(payload, city, upcoming) {
       const data = payload.data;
-      const method = data.meta.method && data.meta.method.name ? data.meta.method.name : "Auto method";
-      locationLine.innerHTML = `<strong>${city}</strong> · ${data.meta.timezone || "Local timezone"}`;
-      dateLine.textContent = `${data.date.readable} · ${method}`;
+      const hijriDate = formatHijriDate(data.date.hijri);
+      renderLocation(city);
+      dateLine.textContent = "";
+      renderDateChip("Gregorian", data.date.readable || "Unknown date", "gregorian");
+      renderDateChip("Hijri", hijriDate, "hijri");
+      timezoneLine.textContent = data.meta.timezone || "Local timezone";
+      renderSunPath(payload);
 
       if (!upcoming) {
         nextLine.textContent = "No upcoming salah found in this schedule.";
@@ -607,8 +1219,13 @@
 
     async function loadCity(city) {
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
-      locationLine.innerHTML = `<strong>${city}</strong>`;
+      renderLocation(city);
       dateLine.textContent = "";
+      timezoneLine.textContent = "Loading...";
+      sunriseLine.textContent = "--:--";
+      sunsetLine.textContent = "--:--";
+      sunProgressLine.textContent = "Loading sunrise and sunset...";
+      setSunMarker(0);
       nextLine.textContent = "Loading...";
       remainingLine.textContent = "";
       messageLine.textContent = "";
@@ -617,6 +1234,7 @@
       try {
         const todayPayload = await fetchTimings(city, new Date());
         let upcoming = findUpcoming(todayPayload);
+        const current = findCurrentSalah(todayPayload);
 
         if (!upcoming) {
           const tomorrow = new Date();
@@ -625,12 +1243,17 @@
           upcoming = findUpcoming(tomorrowPayload);
         }
 
-        renderRows(todayPayload, upcoming);
+        renderRows(todayPayload, upcoming, current);
         renderSummary(todayPayload, city, upcoming);
         messageLine.textContent = "Times are provided by AlAdhan and may differ from local mosque calendars.";
       } catch (error) {
         timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
         nextLine.textContent = "Please try another city or check your connection.";
+        timezoneLine.textContent = "Unavailable";
+        sunriseLine.textContent = "--:--";
+        sunsetLine.textContent = "--:--";
+        sunProgressLine.textContent = "Sunrise and sunset are unavailable.";
+        setSunMarker(0);
         messageLine.textContent = error.message;
         messageLine.classList.add("error");
       }
@@ -639,6 +1262,8 @@
     function loadCustomCity() {
       const city = customCityInput.value.trim();
       if (!city) {
+        customCityToggle.checked = true;
+        customCity.classList.add("open");
         customCityInput.focus();
         return;
       }
@@ -663,8 +1288,18 @@
       }
 
       citySelect.addEventListener("change", () => {
+        customCityToggle.checked = false;
+        customCity.classList.remove("open");
         customCityInput.value = "";
         loadCity(citySelect.value);
+      });
+      customCityToggle.addEventListener("change", () => {
+        customCity.classList.toggle("open", customCityToggle.checked);
+        if (customCityToggle.checked) {
+          customCityInput.focus();
+        } else {
+          customCityInput.value = "";
+        }
       });
       customCityButton.addEventListener("click", loadCustomCity);
       customCityInput.addEventListener("keydown", (event) => {
@@ -673,16 +1308,19 @@
           loadCustomCity();
         }
       });
+      settingsToggle.addEventListener("click", () => {
+        const isOpen = settingsPanel.classList.toggle("open");
+        settingsPanel.hidden = !isOpen;
+        settingsToggle.setAttribute("aria-expanded", String(isOpen));
+      });
       installButton.addEventListener("click", installApp);
       citySelect.value = DEFAULT_CITY;
       loadCity(citySelect.value);
       registerServiceWorker();
-      installHelp.textContent = getInstallHelpText();
     }
 
     async function installApp() {
       if (!deferredInstallPrompt) {
-        installHelp.textContent = getInstallHelpText();
         return;
       }
 
@@ -691,12 +1329,12 @@
       const result = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
       installButton.disabled = true;
+      installButton.classList.remove("available");
+      installHelp.classList.remove("available");
 
       if (result.outcome === "accepted") {
         messageLine.textContent = "Salah Times was added to your home screen.";
         messageLine.classList.remove("error");
-      } else {
-        installHelp.textContent = "Use your browser menu and choose Add to Home Screen if the prompt does not reopen.";
       }
     }
 
@@ -712,28 +1350,20 @@
       }
     }
 
-    function getInstallHelpText() {
-      if (location.protocol === "file:") {
-        return "This page is open as a local file. Host it on GitHub Pages, then open the HTTPS link on your phone to install.";
-      }
-
-      if (!("serviceWorker" in navigator)) {
-        return "Use your browser menu and choose Add to Home Screen.";
-      }
-
-      return "If no prompt appears, use your browser menu and choose Add to Home Screen.";
-    }
-
     window.addEventListener("beforeinstallprompt", (event) => {
       event.preventDefault();
       deferredInstallPrompt = event;
       installButton.disabled = false;
+      installButton.classList.add("available");
+      installHelp.classList.add("available");
       installHelp.textContent = "Tap Install App to add Salah Times to your home screen.";
     });
 
     window.addEventListener("appinstalled", () => {
       deferredInstallPrompt = null;
       installButton.disabled = true;
+      installButton.classList.remove("available");
+      installHelp.classList.remove("available");
       installHelp.textContent = "Salah Times is installed.";
       messageLine.textContent = "Salah Times was added to your home screen.";
       messageLine.classList.remove("error");

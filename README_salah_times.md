@@ -19,8 +19,9 @@ Open the HTML version in a browser:
 .\salah_times.html
 ```
 
-The HTML page includes a city dropdown, an other-city text box, a formatted
-table for the five salah times, and an upcoming salah status.
+The HTML page includes a city dropdown, a checkbox for entering a city that is
+not listed, sunrise and sunset with an animated sun path, a formatted table for
+the five salah times, and an upcoming salah status.
 
 ## Install On Mobile
 

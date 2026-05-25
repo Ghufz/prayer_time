@@ -26,6 +26,21 @@ API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress"
 PRAYERS = ("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
 SALAH_PRAYERS = PRAYERS
 
+HIJRI_MONTHS = (
+    "Muharram",
+    "Safar",
+    "Rabi al-Awwal",
+    "Rabi al-Thani",
+    "Jumada al-Awwal",
+    "Jumada al-Thani",
+    "Rajab",
+    "Shaban",
+    "Ramadan",
+    "Shawwal",
+    "Dhul Qadah",
+    "Dhul Hijjah",
+)
+
 METHODS = {
     0: "Shia Ithna-Ashari",
     1: "University of Islamic Sciences, Karachi",
@@ -106,6 +121,24 @@ def fetch_timings(
 def print_method_list() -> None:
     for method_id, name in METHODS.items():
         print(f"{method_id:>2}  {name}")
+
+
+def format_hijri_date(hijri: dict[str, Any]) -> str:
+    month = hijri.get("month", {})
+    month_number = month.get("number")
+    month_name = None
+
+    if isinstance(month_number, int) and 1 <= month_number <= 12:
+        month_name = HIJRI_MONTHS[month_number - 1]
+    if not month_name:
+        month_name = month.get("en")
+
+    date_parts = str(hijri.get("date", "")).split("-")
+    day = str(hijri.get("day") or (date_parts[0] if len(date_parts) > 0 else "")).strip()
+    year = str(hijri.get("year") or (date_parts[2] if len(date_parts) > 2 else "")).strip()
+    parts = [part for part in (day, month_name, year) if part]
+
+    return " ".join(parts) if parts else "Unknown Hijri date"
 
 
 def resolve_timezone(timezone_name: str) -> tzinfo:
@@ -203,7 +236,7 @@ def print_table(
     meta = data.get("meta", {})
 
     gregorian = date.get("readable", "Unknown date")
-    hijri = date.get("hijri", {}).get("date", "Unknown Hijri date")
+    hijri = format_hijri_date(date.get("hijri", {}))
     timezone = meta.get("timezone", "Unknown timezone")
     method = meta.get("method", {}).get("name", "Auto/unknown method")
 
