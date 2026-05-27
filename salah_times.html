@@ -328,13 +328,13 @@
 
     .sun-panel {
       display: grid;
-      gap: 14px;
+      gap: 10px;
       margin-bottom: 16px;
       border: 1px solid #f0d7a8;
       border-radius: 8px;
       background: linear-gradient(180deg, #fff9ed, #ffffff);
       box-shadow: var(--shadow);
-      padding: 18px;
+      padding: 12px;
     }
 
     .sun-panel-header {
@@ -426,7 +426,7 @@
 
     .sun-path-wrap {
       position: relative;
-      min-height: 150px;
+      min-height: 108px;
       overflow: hidden;
       border-radius: 8px;
       background:
@@ -437,7 +437,7 @@
     .sun-path {
       display: block;
       width: 100%;
-      height: 150px;
+      height: 108px;
     }
 
     .sun-arc {
@@ -651,6 +651,12 @@
         flex-direction: column;
       }
 
+      .sun-path-wrap,
+      .sun-path {
+        min-height: 96px;
+        height: 96px;
+      }
+
       .remaining {
         white-space: normal;
       }
@@ -757,7 +763,7 @@
         </div>
         <div class="controls">
           <label for="city-select">Select city</label>
-          <select id="city-select" aria-label="Select city"></select>
+          <select id="city-select" aria-label="Select city" autocomplete="off"></select>
         </div>
         <div class="custom-city">
           <label class="custom-toggle" for="custom-city-toggle">
@@ -969,6 +975,7 @@
     const DEFAULT_CITY = "Delhi, India";
     const AUTO_CITY_GROUP_LABEL = "Auto-detected location";
     const INDIA_HIJRI_DATE_OFFSET = -1;
+    const CITY_PLACEHOLDER_VALUE = "";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
@@ -994,6 +1001,20 @@
     const messageLine = document.querySelector("#message-line");
     let deferredInstallPrompt = null;
     let sunAnimationFrame = null;
+
+    function setCitySelectPlaceholder(label) {
+      let option = citySelect.querySelector("[data-city-placeholder='true']");
+      if (!option) {
+        option = document.createElement("option");
+        option.value = CITY_PLACEHOLDER_VALUE;
+        option.disabled = true;
+        option.dataset.cityPlaceholder = "true";
+        citySelect.insertBefore(option, citySelect.firstChild);
+      }
+
+      option.textContent = label;
+      citySelect.value = CITY_PLACEHOLDER_VALUE;
+    }
 
     function normalizeLocationPart(value) {
       return String(value || "")
@@ -1067,7 +1088,8 @@
           optionGroup = document.createElement("optgroup");
           optionGroup.label = AUTO_CITY_GROUP_LABEL;
           optionGroup.dataset.autoLocation = "true";
-          citySelect.insertBefore(optionGroup, citySelect.firstChild);
+          const placeholder = citySelect.querySelector("[data-city-placeholder='true']");
+          citySelect.insertBefore(optionGroup, placeholder ? placeholder.nextSibling : citySelect.firstChild);
         }
 
         let option = optionGroup.querySelector("option");
@@ -1633,10 +1655,10 @@
         return;
       }
 
+      setCitySelectPlaceholder("Detecting your city...");
       showLoadingState("Detecting location...");
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          citySelect.value = "";
           loadCurrentLocation(position);
         },
         () => loadDefaultCity(),
@@ -1657,11 +1679,14 @@
         return;
       }
 
+      setCitySelectPlaceholder("Select city");
       citySelect.value = "";
       loadCity(city);
     }
 
     function init() {
+      setCitySelectPlaceholder("Select city");
+
       for (const group of CITY_GROUPS) {
         const optionGroup = document.createElement("optgroup");
         optionGroup.label = group.label;
@@ -1677,6 +1702,9 @@
       }
 
       citySelect.addEventListener("change", () => {
+        if (!citySelect.value) {
+          return;
+        }
         customCityToggle.checked = false;
         customCity.classList.remove("open");
         customCityInput.value = "";
