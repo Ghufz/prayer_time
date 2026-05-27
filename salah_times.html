@@ -610,6 +610,11 @@
       color: #9d1f2e;
     }
 
+    .offline {
+      color: #8a5b18;
+      font-weight: 650;
+    }
+
     @media (max-width: 720px) {
       main {
         width: min(100% - 22px, 980px);
@@ -976,6 +981,7 @@
     const AUTO_CITY_GROUP_LABEL = "Auto-detected location";
     const INDIA_HIJRI_DATE_OFFSET = -1;
     const CITY_PLACEHOLDER_VALUE = "";
+    const LAST_SCHEDULE_CACHE_KEY = "salah-times:last-schedule";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
@@ -1014,6 +1020,55 @@
 
       option.textContent = label;
       citySelect.value = CITY_PLACEHOLDER_VALUE;
+    }
+
+    function saveLastSchedule(label, todayPayload, tomorrowPayload = null) {
+      try {
+        localStorage.setItem(LAST_SCHEDULE_CACHE_KEY, JSON.stringify({
+          version: 1,
+          label,
+          savedAt: new Date().toISOString(),
+          todayPayload,
+          tomorrowPayload
+        }));
+      } catch (error) {
+        // Cache storage can be unavailable in private mode or when storage is full.
+      }
+    }
+
+    function getLastSchedule() {
+      try {
+        const rawCache = localStorage.getItem(LAST_SCHEDULE_CACHE_KEY);
+        if (!rawCache) {
+          return null;
+        }
+
+        const cache = JSON.parse(rawCache);
+        if (!cache || !cache.label || !cache.todayPayload || !cache.todayPayload.data) {
+          return null;
+        }
+        return cache;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function formatCachedAt(value) {
+      if (!value) {
+        return "";
+      }
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return "";
+      }
+
+      return new Intl.DateTimeFormat("en-IN", {
+        day: "numeric",
+        month: "short",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(date);
     }
 
     function normalizeLocationPart(value) {
@@ -1578,7 +1633,7 @@
       nextLine.textContent = "Loading...";
       remainingLine.textContent = "";
       messageLine.textContent = "";
-      messageLine.classList.remove("error");
+      messageLine.classList.remove("error", "offline");
     }
 
     function showLoadError(error) {
@@ -1591,22 +1646,55 @@
       setSunMarker(0);
       messageLine.textContent = error.message;
       messageLine.classList.add("error");
+      messageLine.classList.remove("offline");
     }
 
-    async function renderSchedule(label, todayPayload, fetchTomorrowPayload) {
+    async function renderSchedule(label, todayPayload, fetchTomorrowPayload, options = {}) {
       let upcoming = findUpcoming(todayPayload);
       const current = findCurrentSalah(todayPayload);
+      let tomorrowPayload = null;
 
-      if (!upcoming) {
+      if (!upcoming && fetchTomorrowPayload) {
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowPayload = await fetchTomorrowPayload(tomorrow);
-        upcoming = findUpcoming(tomorrowPayload);
+        try {
+          tomorrowPayload = await fetchTomorrowPayload(tomorrow);
+          upcoming = findUpcoming(tomorrowPayload);
+        } catch (error) {
+          if (!options.allowTomorrowFailure) {
+            throw error;
+          }
+        }
       }
 
       renderRows(todayPayload, upcoming, current);
       renderSummary(todayPayload, label, upcoming);
-      messageLine.textContent = "Times are provided by AlAdhan and may differ from local mosque calendars.";
+      messageLine.textContent = options.message || "Times are provided by AlAdhan and may differ from local mosque calendars.";
+      messageLine.classList.toggle("offline", Boolean(options.offline));
+      messageLine.classList.toggle("error", Boolean(options.error));
+      return { tomorrowPayload };
+    }
+
+    async function showCachedSchedule() {
+      const cache = getLastSchedule();
+      if (!cache) {
+        return false;
+      }
+
+      const selectedCity = selectCityInDropdown(cache.label);
+      const savedAt = formatCachedAt(cache.savedAt);
+      const savedText = savedAt ? ` Saved ${savedAt}.` : "";
+      await renderSchedule(
+        selectedCity,
+        cache.todayPayload,
+        cache.tomorrowPayload ? async () => cache.tomorrowPayload : null,
+        {
+          allowTomorrowFailure: true,
+          offline: true,
+          message: `Offline: showing the last saved salah times for ${selectedCity}.${savedText}`
+        }
+      );
+      return true;
     }
 
     async function loadCity(city) {
@@ -1614,9 +1702,12 @@
 
       try {
         const todayPayload = await fetchTimings(city, new Date());
-        await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date));
+        const schedule = await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date));
+        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload);
       } catch (error) {
-        showLoadError(error);
+        if (!(await showCachedSchedule())) {
+          showLoadError(error);
+        }
       }
     }
 
@@ -1636,9 +1727,10 @@
 
         const selectedCity = selectCityInDropdown(locationName);
         const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
-        await renderSchedule(selectedCity, todayPayload, (date) =>
+        const schedule = await renderSchedule(selectedCity, todayPayload, (date) =>
           fetchTimingsByCoordinates(coords, date)
         );
+        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload);
       } catch (error) {
         await loadCity(DEFAULT_CITY);
       }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "salah-times-v2";
+const CACHE_NAME = "salah-times-v3";
 const APP_ASSETS = [
   "./",
   "./salah_times.html",
