@@ -745,7 +745,7 @@
             </button>
           </div>
         </div>
-        <p class="subtitle">Five daily prayers with current and upcoming salah highlighted.</p>
+        <p class="subtitle">Track today&apos;s five daily salah times, with the current prayer and the next prayer clearly highlighted.</p>
       </div>
 
       <div class="actions">
@@ -967,6 +967,8 @@
     ];
     const CITIES = CITY_GROUPS.flatMap((group) => group.cities);
     const DEFAULT_CITY = "Delhi, India";
+    const AUTO_CITY_GROUP_LABEL = "Auto-detected location";
+    const INDIA_HIJRI_DATE_OFFSET = -1;
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
@@ -992,6 +994,94 @@
     const messageLine = document.querySelector("#message-line");
     let deferredInstallPrompt = null;
     let sunAnimationFrame = null;
+
+    function normalizeLocationPart(value) {
+      return String(value || "")
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+    }
+
+    function normalizeCountry(value) {
+      const country = normalizeLocationPart(value);
+      const aliases = {
+        "great britain": "uk",
+        "united arab emirates": "uae",
+        "united kingdom": "uk",
+        "united states": "usa",
+        "united states of america": "usa"
+      };
+      return aliases[country] || country;
+    }
+
+    function splitLocationName(value) {
+      const parts = String(value || "").split(",").map((part) => part.trim()).filter(Boolean);
+      return {
+        city: normalizeLocationPart(parts[0]),
+        country: normalizeCountry(parts.slice(1).join(","))
+      };
+    }
+
+    function findMatchingCity(cityName) {
+      const detected = splitLocationName(cityName);
+      if (!detected.city) {
+        return "";
+      }
+
+      const aliases = {
+        bangalore: "Bengaluru, India",
+        "new delhi": "Delhi, India"
+      };
+      if (aliases[detected.city]) {
+        return aliases[detected.city];
+      }
+
+      return CITIES.find((city) => {
+        const known = splitLocationName(city);
+        const sameCountry = !detected.country || !known.country || detected.country === known.country;
+        return sameCountry && (
+          detected.city === known.city ||
+          detected.city.includes(known.city) ||
+          known.city.includes(detected.city)
+        );
+      }) || "";
+    }
+
+    function selectCityInDropdown(cityName) {
+      const matchingCity = findMatchingCity(cityName);
+      const selectedCity = matchingCity || cityName;
+      if (!selectedCity) {
+        citySelect.value = DEFAULT_CITY;
+        return DEFAULT_CITY;
+      }
+
+      customCityToggle.checked = false;
+      customCity.classList.remove("open");
+      customCityInput.value = "";
+
+      if (!matchingCity) {
+        let optionGroup = citySelect.querySelector("[data-auto-location='true']");
+        if (!optionGroup) {
+          optionGroup = document.createElement("optgroup");
+          optionGroup.label = AUTO_CITY_GROUP_LABEL;
+          optionGroup.dataset.autoLocation = "true";
+          citySelect.insertBefore(optionGroup, citySelect.firstChild);
+        }
+
+        let option = optionGroup.querySelector("option");
+        if (!option) {
+          option = document.createElement("option");
+          optionGroup.appendChild(option);
+        }
+        option.value = selectedCity;
+        option.textContent = selectedCity;
+      }
+
+      citySelect.value = selectedCity;
+      return selectedCity;
+    }
 
     function pad(value) {
       return String(value).padStart(2, "0");
@@ -1087,31 +1177,97 @@
       return ` on ${scheduleKey}`;
     }
 
-    function formatHijriDate(hijri) {
+    const HIJRI_MONTH_NAMES = [
+      "Muharram",
+      "Safar",
+      "Rabi al-Awwal",
+      "Rabi al-Thani",
+      "Jumada al-Awwal",
+      "Jumada al-Thani",
+      "Rajab",
+      "Shaban",
+      "Ramadan",
+      "Shawwal",
+      "Dhul Qadah",
+      "Dhul Hijjah"
+    ];
+
+    function isHijriLeapYear(year) {
+      return ((11 * year + 14) % 30) < 11;
+    }
+
+    function getHijriMonthLength(monthNumber, year, sourceHijri) {
+      const sourceMonth = Number(sourceHijri.month && sourceHijri.month.number);
+      const sourceYear = Number(sourceHijri.year || String(sourceHijri.date || "").split("-")[2]);
+      const sourceDays = Number(sourceHijri.month && sourceHijri.month.days);
+      if (monthNumber === sourceMonth && year === sourceYear && sourceDays) {
+        return sourceDays;
+      }
+
+      if (monthNumber === 12) {
+        return isHijriLeapYear(year) ? 30 : 29;
+      }
+      return monthNumber % 2 === 1 ? 30 : 29;
+    }
+
+    function shiftHijriDate(hijri, offsetDays) {
+      let day = Number(hijri.day || String(hijri.date || "").split("-")[0]);
+      const monthNumber = Number(hijri.month && hijri.month.number);
+      let month = monthNumber;
+      let year = Number(hijri.year || String(hijri.date || "").split("-")[2]);
+
+      if (!day || !month || !year || !offsetDays) {
+        return { day, month, year };
+      }
+
+      let remainingDays = offsetDays;
+      while (remainingDays < 0) {
+        day -= 1;
+        if (day < 1) {
+          month -= 1;
+          if (month < 1) {
+            month = 12;
+            year -= 1;
+          }
+          day = getHijriMonthLength(month, year, hijri);
+        }
+        remainingDays += 1;
+      }
+
+      while (remainingDays > 0) {
+        day += 1;
+        if (day > getHijriMonthLength(month, year, hijri)) {
+          day = 1;
+          month += 1;
+          if (month > 12) {
+            month = 1;
+            year += 1;
+          }
+        }
+        remainingDays -= 1;
+      }
+
+      return { day, month, year };
+    }
+
+    function getHijriDateOffset(city, payload) {
+      const location = splitLocationName(city);
+      const timezone = payload.data.meta.timezone || "";
+      if (location.country === "india" || timezone === "Asia/Kolkata") {
+        return INDIA_HIJRI_DATE_OFFSET;
+      }
+      return 0;
+    }
+
+    function formatHijriDate(hijri, offsetDays = 0) {
       if (!hijri) {
         return "Unknown Hijri date";
       }
 
-      const monthNames = [
-        "Muharram",
-        "Safar",
-        "Rabi al-Awwal",
-        "Rabi al-Thani",
-        "Jumada al-Awwal",
-        "Jumada al-Thani",
-        "Rajab",
-        "Shaban",
-        "Ramadan",
-        "Shawwal",
-        "Dhul Qadah",
-        "Dhul Hijjah"
-      ];
-      const monthNumber = Number(hijri.month && hijri.month.number);
-      const monthName = monthNames[monthNumber - 1] || (hijri.month && hijri.month.en) || "";
-      const day = hijri.day || String(hijri.date || "").split("-")[0] || "";
-      const year = hijri.year || String(hijri.date || "").split("-")[2] || "";
+      const adjusted = shiftHijriDate(hijri, offsetDays);
+      const monthName = HIJRI_MONTH_NAMES[adjusted.month - 1] || (hijri.month && hijri.month.en) || "";
 
-      return [day, monthName, year].filter(Boolean).join(" ");
+      return [adjusted.day, monthName, adjusted.year].filter(Boolean).join(" ");
     }
 
     function renderLocation(city) {
@@ -1369,7 +1525,7 @@
 
     function renderSummary(payload, city, upcoming) {
       const data = payload.data;
-      const hijriDate = formatHijriDate(data.date.hijri);
+      const hijriDate = formatHijriDate(data.date.hijri, getHijriDateOffset(city, payload));
       renderLocation(city);
       dateLine.textContent = "";
       renderDateChip("Gregorian", data.date.readable || "Unknown date", "gregorian");
@@ -1447,13 +1603,18 @@
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
       };
-      const fallbackLabel = `Current location (${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)})`;
       showLoadingState("Current location");
 
       try {
-        const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
         const locationName = await resolveLocationName(coords);
-        await renderSchedule(locationName || fallbackLabel, todayPayload, (date) =>
+        if (!locationName) {
+          await loadCity(DEFAULT_CITY);
+          return;
+        }
+
+        const selectedCity = selectCityInDropdown(locationName);
+        const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
+        await renderSchedule(selectedCity, todayPayload, (date) =>
           fetchTimingsByCoordinates(coords, date)
         );
       } catch (error) {
