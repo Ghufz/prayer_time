@@ -866,6 +866,8 @@
 
   <script>
     const API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress";
+    const API_COORDS_URL = "https://api.aladhan.com/v1/timings";
+    const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
     const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
     const CITY_GROUPS = [
       {
@@ -964,7 +966,7 @@
       }
     ];
     const CITIES = CITY_GROUPS.flatMap((group) => group.cities);
-    const DEFAULT_CITY = "Bengaluru, India";
+    const DEFAULT_CITY = "Delhi, India";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
@@ -1296,6 +1298,45 @@
       return payload;
     }
 
+    async function fetchTimingsByCoordinates(coords, date) {
+      const params = new URLSearchParams({
+        latitude: String(coords.latitude),
+        longitude: String(coords.longitude)
+      });
+      const response = await fetch(`${API_COORDS_URL}/${formatApiDate(date)}?${params}`);
+      const payload = await response.json();
+
+      if (!response.ok || payload.code !== 200 || payload.status !== "OK") {
+        throw new Error(payload.data || payload.status || "Unable to fetch salah times.");
+      }
+
+      return payload;
+    }
+
+    async function resolveLocationName(coords) {
+      try {
+        const params = new URLSearchParams({
+          latitude: String(coords.latitude),
+          longitude: String(coords.longitude),
+          localityLanguage: "en"
+        });
+        const response = await fetch(`${REVERSE_GEOCODE_URL}?${params}`);
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = await response.json();
+        const city = data.city || data.locality || data.principalSubdivision;
+        const country = data.countryName;
+        if (city && country) {
+          return `${city}, ${country}`;
+        }
+        return city || country || null;
+      } catch (error) {
+        return null;
+      }
+    }
+
     function renderRows(payload, upcoming, current) {
       const timings = payload.data.timings;
       const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
@@ -1347,9 +1388,9 @@
       remainingLine.textContent = formatRemaining(upcoming.minutesUntil);
     }
 
-    async function loadCity(city) {
+    function showLoadingState(label) {
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
-      renderLocation(city);
+      renderLocation(label);
       dateLine.textContent = "";
       timezoneLine.textContent = "Loading...";
       sunriseLine.textContent = "--:--";
@@ -1360,33 +1401,90 @@
       remainingLine.textContent = "";
       messageLine.textContent = "";
       messageLine.classList.remove("error");
+    }
+
+    function showLoadError(error) {
+      timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
+      nextLine.textContent = "Please try another city or check your connection.";
+      timezoneLine.textContent = "Unavailable";
+      sunriseLine.textContent = "--:--";
+      sunsetLine.textContent = "--:--";
+      sunProgressLine.textContent = "Sunrise and sunset are unavailable.";
+      setSunMarker(0);
+      messageLine.textContent = error.message;
+      messageLine.classList.add("error");
+    }
+
+    async function renderSchedule(label, todayPayload, fetchTomorrowPayload) {
+      let upcoming = findUpcoming(todayPayload);
+      const current = findCurrentSalah(todayPayload);
+
+      if (!upcoming) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowPayload = await fetchTomorrowPayload(tomorrow);
+        upcoming = findUpcoming(tomorrowPayload);
+      }
+
+      renderRows(todayPayload, upcoming, current);
+      renderSummary(todayPayload, label, upcoming);
+      messageLine.textContent = "Times are provided by AlAdhan and may differ from local mosque calendars.";
+    }
+
+    async function loadCity(city) {
+      showLoadingState(city);
 
       try {
         const todayPayload = await fetchTimings(city, new Date());
-        let upcoming = findUpcoming(todayPayload);
-        const current = findCurrentSalah(todayPayload);
-
-        if (!upcoming) {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          const tomorrowPayload = await fetchTimings(city, tomorrow);
-          upcoming = findUpcoming(tomorrowPayload);
-        }
-
-        renderRows(todayPayload, upcoming, current);
-        renderSummary(todayPayload, city, upcoming);
-        messageLine.textContent = "Times are provided by AlAdhan and may differ from local mosque calendars.";
+        await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date));
       } catch (error) {
-        timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
-        nextLine.textContent = "Please try another city or check your connection.";
-        timezoneLine.textContent = "Unavailable";
-        sunriseLine.textContent = "--:--";
-        sunsetLine.textContent = "--:--";
-        sunProgressLine.textContent = "Sunrise and sunset are unavailable.";
-        setSunMarker(0);
-        messageLine.textContent = error.message;
-        messageLine.classList.add("error");
+        showLoadError(error);
       }
+    }
+
+    async function loadCurrentLocation(position) {
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+      const fallbackLabel = `Current location (${coords.latitude.toFixed(2)}, ${coords.longitude.toFixed(2)})`;
+      showLoadingState("Current location");
+
+      try {
+        const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
+        const locationName = await resolveLocationName(coords);
+        await renderSchedule(locationName || fallbackLabel, todayPayload, (date) =>
+          fetchTimingsByCoordinates(coords, date)
+        );
+      } catch (error) {
+        await loadCity(DEFAULT_CITY);
+      }
+    }
+
+    function loadDefaultCity() {
+      citySelect.value = DEFAULT_CITY;
+      loadCity(DEFAULT_CITY);
+    }
+
+    function loadAutomaticLocation() {
+      if (!("geolocation" in navigator)) {
+        loadDefaultCity();
+        return;
+      }
+
+      showLoadingState("Detecting location...");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          citySelect.value = "";
+          loadCurrentLocation(position);
+        },
+        () => loadDefaultCity(),
+        {
+          enableHighAccuracy: false,
+          timeout: 8000,
+          maximumAge: 1800000
+        }
+      );
     }
 
     function loadCustomCity() {
@@ -1444,8 +1542,7 @@
         settingsToggle.setAttribute("aria-expanded", String(isOpen));
       });
       installButton.addEventListener("click", installApp);
-      citySelect.value = DEFAULT_CITY;
-      loadCity(citySelect.value);
+      loadAutomaticLocation();
       registerServiceWorker();
     }
 
