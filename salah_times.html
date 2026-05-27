@@ -558,6 +558,31 @@
       background: rgba(245, 166, 35, 0.2);
     }
 
+    .status-cell {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .current-countdown {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      background: #fff3dc;
+      color: #8a5b18;
+      font-size: 0.74rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+
+    .current-countdown[hidden] {
+      display: none;
+    }
+
     .next {
       display: flex;
       align-items: center;
@@ -1007,6 +1032,7 @@
     const messageLine = document.querySelector("#message-line");
     let deferredInstallPrompt = null;
     let sunAnimationFrame = null;
+    let currentSalahCountdownTimer = null;
 
     function setCitySelectPlaceholder(label) {
       let option = citySelect.querySelector("[data-city-placeholder='true']");
@@ -1229,6 +1255,13 @@
         return `in ${hours}h`;
       }
       return `in ${minutes}m`;
+    }
+
+    function formatCountdownSeconds(totalSeconds) {
+      const safeSeconds = Math.max(0, Math.ceil(totalSeconds));
+      const minutes = Math.floor(safeSeconds / 60);
+      const seconds = safeSeconds % 60;
+      return `${minutes}:${pad(seconds)}`;
     }
 
     function formatSunStatus(progress, sunrise, sunset, now) {
@@ -1511,12 +1544,82 @@
           return {
             name,
             displayTime: startValue,
+            endDisplayTime: endValue || "midnight",
+            endMinutes: end ? end.minutes : 1440,
+            timezone,
             scheduleKey: scheduleDate.key
           };
         }
       }
 
       return null;
+    }
+
+    function stopCurrentSalahCountdown() {
+      if (currentSalahCountdownTimer) {
+        clearInterval(currentSalahCountdownTimer);
+        clearTimeout(currentSalahCountdownTimer);
+        currentSalahCountdownTimer = null;
+      }
+    }
+
+    function getCurrentSalahRemainingSeconds(current) {
+      if (!current || !current.endMinutes) {
+        return null;
+      }
+
+      const now = getCurrentInTimezone(current.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
+      if (now.key !== current.scheduleKey) {
+        return 0;
+      }
+
+      return (current.endMinutes * 60) - (now.minutes * 60 + now.seconds);
+    }
+
+    function updateCurrentSalahCountdown(current) {
+      const countdown = timesBody.querySelector("[data-current-countdown]");
+      if (!countdown) {
+        stopCurrentSalahCountdown();
+        return;
+      }
+
+      const remainingSeconds = getCurrentSalahRemainingSeconds(current);
+      if (remainingSeconds === null || remainingSeconds > 15 * 60) {
+        countdown.hidden = true;
+        countdown.textContent = "";
+        return;
+      }
+
+      if (remainingSeconds <= 0) {
+        countdown.hidden = false;
+        countdown.textContent = "Ends now";
+        stopCurrentSalahCountdown();
+        return;
+      }
+
+      countdown.hidden = false;
+      countdown.textContent = `Ends in ${formatCountdownSeconds(remainingSeconds)}`;
+    }
+
+    function startCurrentSalahCountdown(current) {
+      stopCurrentSalahCountdown();
+      if (!current || !current.endMinutes) {
+        return;
+      }
+
+      updateCurrentSalahCountdown(current);
+      const remainingSeconds = getCurrentSalahRemainingSeconds(current);
+      if (remainingSeconds === null || remainingSeconds <= 0) {
+        return;
+      }
+
+      if (remainingSeconds > 15 * 60) {
+        const delay = Math.min((remainingSeconds - 15 * 60) * 1000, 2147483647);
+        currentSalahCountdownTimer = setTimeout(() => startCurrentSalahCountdown(current), delay);
+        return;
+      }
+
+      currentSalahCountdownTimer = setInterval(() => updateCurrentSalahCountdown(current), 1000);
     }
 
     async function fetchTimings(address, date) {
@@ -1586,7 +1689,7 @@
           row.classList.add("upcoming");
         }
         const status = isCurrent
-          ? '<span class="badge current">Current</span>'
+          ? '<span class="badge current">Current</span><span class="current-countdown" data-current-countdown hidden></span>'
           : isUpcoming
             ? '<span class="badge upcoming">Upcoming</span>'
             : "";
@@ -1594,10 +1697,12 @@
         row.innerHTML = `
           <td class="prayer-name">${prayer}</td>
           <td class="time-cell">${timings[prayer] || "-"}</td>
-          <td>${status}</td>
+          <td><span class="status-cell">${status}</span></td>
         `;
         timesBody.appendChild(row);
       }
+
+      startCurrentSalahCountdown(hasCurrent ? current : null);
     }
 
     function renderSummary(payload, city, upcoming) {
@@ -1622,6 +1727,7 @@
     }
 
     function showLoadingState(label) {
+      stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
       renderLocation(label);
       dateLine.textContent = "";
@@ -1637,6 +1743,7 @@
     }
 
     function showLoadError(error) {
+      stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
       nextLine.textContent = "Please try another city or check your connection.";
       timezoneLine.textContent = "Unavailable";
@@ -1675,7 +1782,7 @@
       return { tomorrowPayload };
     }
 
-    async function showCachedSchedule() {
+    async function showCachedSchedule(options = {}) {
       const cache = getLastSchedule();
       if (!cache) {
         return false;
@@ -1684,21 +1791,28 @@
       const selectedCity = selectCityInDropdown(cache.label);
       const savedAt = formatCachedAt(cache.savedAt);
       const savedText = savedAt ? ` Saved ${savedAt}.` : "";
+      const message = options.message || `Offline: showing the last saved salah times for ${selectedCity}.${savedText}`;
       await renderSchedule(
         selectedCity,
         cache.todayPayload,
         cache.tomorrowPayload ? async () => cache.tomorrowPayload : null,
         {
           allowTomorrowFailure: true,
-          offline: true,
-          message: `Offline: showing the last saved salah times for ${selectedCity}.${savedText}`
+          offline: options.offline !== false,
+          message
         }
       );
       return true;
     }
 
-    async function loadCity(city) {
-      showLoadingState(city);
+    async function loadCity(city, keepCurrentView = false) {
+      if (keepCurrentView) {
+        messageLine.textContent = `Updating times for ${city}...`;
+        messageLine.classList.add("offline");
+        messageLine.classList.remove("error");
+      } else {
+        showLoadingState(city);
+      }
 
       try {
         const todayPayload = await fetchTimings(city, new Date());
@@ -1711,17 +1825,23 @@
       }
     }
 
-    async function loadCurrentLocation(position) {
+    async function loadCurrentLocation(position, keepCurrentView = false) {
       const coords = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
       };
-      showLoadingState("Current location");
+      if (keepCurrentView) {
+        messageLine.textContent = "Updating times for your detected location...";
+        messageLine.classList.add("offline");
+        messageLine.classList.remove("error");
+      } else {
+        showLoadingState("Current location");
+      }
 
       try {
         const locationName = await resolveLocationName(coords);
         if (!locationName) {
-          await loadCity(DEFAULT_CITY);
+          await loadCity(DEFAULT_CITY, keepCurrentView);
           return;
         }
 
@@ -1732,7 +1852,7 @@
         );
         saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload);
       } catch (error) {
-        await loadCity(DEFAULT_CITY);
+        await loadCity(DEFAULT_CITY, keepCurrentView);
       }
     }
 
@@ -1741,19 +1861,38 @@
       loadCity(DEFAULT_CITY);
     }
 
-    function loadAutomaticLocation() {
+    async function loadAutomaticLocation() {
+      setCitySelectPlaceholder("Detecting your city...");
+      const showedCache = await showCachedSchedule({
+        message: "Showing last saved salah times while detecting your city."
+      });
+
       if (!("geolocation" in navigator)) {
-        loadDefaultCity();
+        if (!showedCache) {
+          loadDefaultCity();
+        } else {
+          messageLine.textContent = "Location detection is not available. Showing last saved salah times.";
+        }
         return;
       }
 
-      setCitySelectPlaceholder("Detecting your city...");
-      showLoadingState("Detecting location...");
+      if (!showedCache) {
+        showLoadingState("Detecting location...");
+      }
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          loadCurrentLocation(position);
+          loadCurrentLocation(position, showedCache);
         },
-        () => loadDefaultCity(),
+        () => {
+          if (showedCache) {
+            messageLine.textContent = "Unable to detect your city. Showing last saved salah times.";
+            messageLine.classList.add("offline");
+            messageLine.classList.remove("error");
+          } else {
+            loadDefaultCity();
+          }
+        },
         {
           enableHighAccuracy: false,
           timeout: 8000,
