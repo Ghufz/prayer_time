@@ -1299,12 +1299,13 @@
     function renderRows(payload, upcoming, current) {
       const timings = payload.data.timings;
       const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
+      const hasCurrent = current && current.scheduleKey === scheduleKey;
       timesBody.innerHTML = "";
 
       for (const prayer of PRAYERS) {
         const row = document.createElement("tr");
         const isCurrent = current && current.name === prayer && current.scheduleKey === scheduleKey;
-        const isUpcoming = upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
+        const isUpcoming = !hasCurrent && upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
         if (isCurrent) {
           row.classList.add("current");
         } else if (isUpcoming) {
