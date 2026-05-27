@@ -370,11 +370,34 @@
 
     .sun-chip {
       display: grid;
-      gap: 2px;
+      grid-template-columns: 34px minmax(0, 1fr);
+      align-items: center;
+      gap: 9px;
       min-width: 0;
       border: 1px solid transparent;
       border-radius: 8px;
       padding: 8px 11px;
+    }
+
+    .sun-label {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .sun-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .sun-icon .icon {
+      width: 20px;
+      height: 20px;
     }
 
     .sun-chip.sunrise {
@@ -407,8 +430,8 @@
       overflow: hidden;
       border-radius: 8px;
       background:
-        linear-gradient(180deg, rgba(237, 245, 255, 0.9), rgba(255, 245, 223, 0.9)),
-        #ffffff;
+        linear-gradient(180deg, #bfe4ff 0%, #e7f5ff 52%, #fff3d4 100%),
+        #d9efff;
     }
 
     .sun-path {
@@ -418,25 +441,25 @@
     }
 
     .sun-arc {
-      stroke: #e9b44c;
+      stroke: #f2b84b;
       stroke-width: 4;
       stroke-linecap: round;
       fill: none;
     }
 
     .sun-horizon {
-      stroke: rgba(138, 91, 24, 0.26);
+      stroke: rgba(34, 87, 122, 0.24);
       stroke-width: 2;
       stroke-linecap: round;
     }
 
     .sun-marker {
       fill: #f5a623;
-      filter: drop-shadow(0 6px 12px rgba(155, 90, 18, 0.3));
+      filter: drop-shadow(0 7px 14px rgba(155, 90, 18, 0.32));
     }
 
     .sun-marker-halo {
-      fill: rgba(245, 166, 35, 0.18);
+      fill: rgba(255, 221, 123, 0.34);
     }
 
     .sun-progress-text {
@@ -445,7 +468,7 @@
     }
 
     .table-wrap {
-      overflow-x: auto;
+      overflow-x: hidden;
       border: 1px solid var(--line);
       border-radius: 8px;
       background: var(--panel);
@@ -454,8 +477,8 @@
 
     table {
       width: 100%;
-      min-width: 560px;
       border-collapse: collapse;
+      table-layout: fixed;
     }
 
     th,
@@ -471,6 +494,21 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       background: #fbfcf8;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1) {
+      width: 38%;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      width: 26%;
+    }
+
+    th:nth-child(3),
+    td:nth-child(3) {
+      width: 36%;
     }
 
     tbody tr:last-child td {
@@ -499,6 +537,7 @@
     .badge {
       display: inline-flex;
       align-items: center;
+      max-width: 100%;
       min-height: 28px;
       border-radius: 999px;
       padding: 4px 10px;
@@ -506,6 +545,7 @@
       background: rgba(27, 128, 106, 0.12);
       font-size: 0.85rem;
       font-weight: 750;
+      white-space: nowrap;
     }
 
     .badge.current {
@@ -589,7 +629,21 @@
 
       th,
       td {
-        padding: 14px;
+        padding: 12px 10px;
+      }
+
+      th {
+        font-size: 0.7rem;
+      }
+
+      .time-cell {
+        font-size: 0.98rem;
+      }
+
+      .badge {
+        min-height: 24px;
+        padding: 3px 7px;
+        font-size: 0.74rem;
       }
 
       .sun-panel-header {
@@ -603,6 +657,36 @@
     }
 
     @media (max-width: 420px) {
+      th,
+      td {
+        padding: 10px 7px;
+      }
+
+      th:nth-child(1),
+      td:nth-child(1) {
+        width: 36%;
+      }
+
+      th:nth-child(2),
+      td:nth-child(2) {
+        width: 24%;
+      }
+
+      th:nth-child(3),
+      td:nth-child(3) {
+        width: 40%;
+      }
+
+      .prayer-name,
+      .time-cell {
+        font-size: 0.92rem;
+      }
+
+      .badge {
+        font-size: 0.68rem;
+        padding-inline: 6px;
+      }
+
       .date-line,
       .sun-times {
         gap: 6px;
@@ -617,6 +701,21 @@
       .sun-chip strong {
         font-size: 0.86rem;
         overflow-wrap: anywhere;
+      }
+
+      .sun-chip {
+        grid-template-columns: 30px minmax(0, 1fr);
+        gap: 7px;
+      }
+
+      .sun-icon {
+        width: 30px;
+        height: 30px;
+      }
+
+      .sun-icon .icon {
+        width: 18px;
+        height: 18px;
       }
 
       .custom-row button {
@@ -694,12 +793,32 @@
         </div>
         <div class="sun-times">
           <div class="sun-chip sunrise">
-            <span>Sunrise</span>
-            <strong id="sunrise-line">--:--</strong>
+            <span class="sun-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 18h18"></path>
+                <path d="M7 15a5 5 0 0 1 10 0"></path>
+                <path d="M12 12V4"></path>
+                <path d="m8 8 4-4 4 4"></path>
+              </svg>
+            </span>
+            <span class="sun-label">
+              <span>Sunrise</span>
+              <strong id="sunrise-line">--:--</strong>
+            </span>
           </div>
           <div class="sun-chip sunset">
-            <span>Sunset</span>
-            <strong id="sunset-line">--:--</strong>
+            <span class="sun-icon">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 18h18"></path>
+                <path d="M7 15a5 5 0 0 1 10 0"></path>
+                <path d="M12 4v8"></path>
+                <path d="m8 8 4 4 4-4"></path>
+              </svg>
+            </span>
+            <span class="sun-label">
+              <span>Sunset</span>
+              <strong id="sunset-line">--:--</strong>
+            </span>
           </div>
         </div>
       </div>
@@ -1138,21 +1257,31 @@
         return null;
       }
 
-      let current = null;
-      for (const prayer of PRAYERS) {
-        const parsedTime = parseTiming(data.timings[prayer]);
-        if (!parsedTime || parsedTime.minutes > now.minutes) {
+      const periods = [
+        ["Fajr", data.timings.Fajr, data.timings.Sunrise],
+        ["Dhuhr", data.timings.Dhuhr, data.timings.Asr],
+        ["Asr", data.timings.Asr, data.timings.Maghrib],
+        ["Maghrib", data.timings.Maghrib, data.timings.Isha],
+        ["Isha", data.timings.Isha, null]
+      ];
+
+      for (const [name, startValue, endValue] of periods) {
+        const start = parseTiming(startValue);
+        const end = endValue ? parseTiming(endValue) : null;
+        if (!start || start.minutes > now.minutes) {
           continue;
         }
 
-        current = {
-          name: prayer,
-          displayTime: data.timings[prayer],
-          scheduleKey: scheduleDate.key
-        };
+        if (!end || now.minutes < end.minutes) {
+          return {
+            name,
+            displayTime: startValue,
+            scheduleKey: scheduleDate.key
+          };
+        }
       }
 
-      return current;
+      return null;
     }
 
     async function fetchTimings(address, date) {
