@@ -129,7 +129,7 @@
     }
 
     .actions {
-      display: grid;
+      display: none;
       gap: 10px;
       min-width: min(340px, 100%);
       border: 1px solid rgba(255, 255, 255, 0.72);
@@ -137,6 +137,10 @@
       background: rgba(255, 253, 248, 0.96);
       box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
       padding: 14px;
+    }
+
+    .actions.open {
+      display: grid;
     }
 
     .controls {
@@ -267,7 +271,7 @@
       border: 1px solid rgba(255, 255, 255, 0.24);
       background: rgba(255, 255, 255, 0.12);
       color: #ffffff;
-      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+      box-shadow: none;
     }
 
     .settings-control {
@@ -282,6 +286,7 @@
       height: 42px;
       padding: 0;
       color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
     }
 
     .settings-panel {
@@ -1005,29 +1010,36 @@
 
       <div class="actions">
         <div class="settings-panel" id="settings-panel" hidden>
+          <div class="controls">
+            <label for="city-select">Select city</label>
+            <select id="city-select" aria-label="Select city" autocomplete="off"></select>
+          </div>
+          <div class="controls">
+            <label for="school-select">Asr method</label>
+            <select id="school-select" aria-label="Asr method">
+              <option value="0">Shafi / Maliki / Hanbali</option>
+              <option value="1">Hanafi</option>
+            </select>
+          </div>
+          <div class="custom-city">
+            <label class="custom-toggle" for="custom-city-toggle">
+              <input id="custom-city-toggle" type="checkbox">
+              <span>My city isn't listed</span>
+            </label>
+            <div class="custom-row">
+              <input id="custom-city-input" type="text" placeholder="City, India" autocomplete="address-level2">
+              <button id="custom-city-button" type="button" aria-label="Search custom city">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <path d="m21 21-4.35-4.35"></path>
+                </svg>
+                <span>Search</span>
+              </button>
+            </div>
+          </div>
           <div class="settings-row">
             <span class="settings-label">Timezone</span>
             <span class="settings-value" id="timezone-line">Loading...</span>
-          </div>
-        </div>
-        <div class="controls">
-          <label for="city-select">Select city</label>
-          <select id="city-select" aria-label="Select city" autocomplete="off"></select>
-        </div>
-        <div class="custom-city">
-          <label class="custom-toggle" for="custom-city-toggle">
-            <input id="custom-city-toggle" type="checkbox">
-            <span>My city isn't listed</span>
-          </label>
-          <div class="custom-row">
-            <input id="custom-city-input" type="text" placeholder="City, India" autocomplete="address-level2">
-            <button id="custom-city-button" type="button" aria-label="Search custom city">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-              <span>Search</span>
-            </button>
           </div>
         </div>
         <button id="install-button" type="button">Install App</button>
@@ -1140,6 +1152,7 @@
   <script>
     const API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress";
     const API_COORDS_URL = "https://api.aladhan.com/v1/timings";
+    const GEOCODE_URL = "https://nominatim.openstreetmap.org/search";
     const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
     const KAABA_COORDS = { latitude: 21.422487, longitude: 39.826206 };
     const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
@@ -1245,12 +1258,18 @@
     const INDIA_HIJRI_DATE_OFFSET = -1;
     const CITY_PLACEHOLDER_VALUE = "";
     const LAST_SCHEDULE_CACHE_KEY = "salah-times:last-schedule";
+    const DAILY_CITY_CACHE_KEY = "salah-times:daily-city-cache";
+    const DAILY_CITY_CACHE_LIMIT = 10;
+    const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
+    const CITY_COORDS_CACHE_LIMIT = 20;
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
+    const schoolSelect = document.querySelector("#school-select");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
+    const actionsPanel = document.querySelector(".actions");
     const settingsToggle = document.querySelector("#settings-toggle");
     const settingsPanel = document.querySelector("#settings-panel");
     const installButton = document.querySelector("#install-button");
@@ -1290,7 +1309,15 @@
       citySelect.value = CITY_PLACEHOLDER_VALUE;
     }
 
-    function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null) {
+    function getSelectedSchool() {
+      return schoolSelect ? schoolSelect.value || "0" : "0";
+    }
+
+    function getSchoolLabel(school = getSelectedSchool()) {
+      return school === "1" ? "Hanafi" : "Shafi / Maliki / Hanbali";
+    }
+
+    function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
       try {
         localStorage.setItem(LAST_SCHEDULE_CACHE_KEY, JSON.stringify({
           version: 1,
@@ -1298,7 +1325,9 @@
           savedAt: new Date().toISOString(),
           todayPayload,
           tomorrowPayload,
-          qiblaCoords: getValidCoords(qiblaCoords)
+          qiblaCoords: getValidCoords(qiblaCoords),
+          qiblaCoordsSource,
+          school
         }));
       } catch (error) {
         // Cache storage can be unavailable in private mode or when storage is full.
@@ -1319,6 +1348,119 @@
         return cache;
       } catch (error) {
         return null;
+      }
+    }
+
+    function normalizeCacheCityKey(city) {
+      return normalizeLocationPart(city);
+    }
+
+    function getDailyCityCache() {
+      try {
+        const rawCache = localStorage.getItem(DAILY_CITY_CACHE_KEY);
+        if (!rawCache) {
+          return { version: 1, entries: [] };
+        }
+
+        const cache = JSON.parse(rawCache);
+        if (!cache || !Array.isArray(cache.entries)) {
+          return { version: 1, entries: [] };
+        }
+
+        return {
+          version: 1,
+          entries: cache.entries.filter((entry) => entry && entry.key && entry.todayPayload && entry.todayPayload.data)
+        };
+      } catch (error) {
+        return { version: 1, entries: [] };
+      }
+    }
+
+    function getDailyCityCacheKey(city, date, school = getSelectedSchool()) {
+      return `${normalizeCacheCityKey(city)}|${formatApiDate(date)}|school:${school}`;
+    }
+
+    function getCachedCitySchedule(city, date = new Date(), school = getSelectedSchool()) {
+      const cacheKey = getDailyCityCacheKey(city, date, school);
+      return getDailyCityCache().entries.find((entry) => entry.key === cacheKey) || null;
+    }
+
+    function saveDailyCitySchedule(label, date, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
+      try {
+        const cacheKey = getDailyCityCacheKey(label, date, school);
+        const requestDate = formatApiDate(date);
+        const cache = getDailyCityCache();
+        const entry = {
+          key: cacheKey,
+          label,
+          requestDate,
+          savedAt: new Date().toISOString(),
+          todayPayload,
+          tomorrowPayload,
+          qiblaCoords: getValidCoords(qiblaCoords),
+          qiblaCoordsSource,
+          school
+        };
+        const entries = [
+          entry,
+          ...cache.entries.filter((cachedEntry) => cachedEntry.key !== cacheKey)
+        ].slice(0, DAILY_CITY_CACHE_LIMIT);
+
+        localStorage.setItem(DAILY_CITY_CACHE_KEY, JSON.stringify({ version: 1, entries }));
+      } catch (error) {
+        // Daily cache is optional; the app can still fetch live data.
+      }
+    }
+
+    function getCityCoordsCache() {
+      try {
+        const rawCache = localStorage.getItem(CITY_COORDS_CACHE_KEY);
+        if (!rawCache) {
+          return { version: 1, entries: [] };
+        }
+
+        const cache = JSON.parse(rawCache);
+        if (!cache || !Array.isArray(cache.entries)) {
+          return { version: 1, entries: [] };
+        }
+
+        return {
+          version: 1,
+          entries: cache.entries.filter((entry) => entry && entry.key && getValidCoords(entry.coords))
+        };
+      } catch (error) {
+        return { version: 1, entries: [] };
+      }
+    }
+
+    function getCachedCityCoords(city) {
+      const cacheKey = normalizeCacheCityKey(city);
+      return getCityCoordsCache().entries.find((entry) => entry.key === cacheKey) || null;
+    }
+
+    function saveCityCoords(city, coords) {
+      const validCoords = getValidCoords(coords);
+      if (!validCoords) {
+        return;
+      }
+
+      try {
+        const cacheKey = normalizeCacheCityKey(city);
+        const cache = getCityCoordsCache();
+        const entry = {
+          key: cacheKey,
+          label: city,
+          coords: validCoords,
+          savedAt: new Date().toISOString()
+        };
+        const entries = [
+          entry,
+          ...cache.entries.filter((cachedEntry) => cachedEntry.key !== cacheKey)
+        ].slice(0, CITY_COORDS_CACHE_LIMIT);
+
+        localStorage.setItem(CITY_COORDS_CACHE_KEY, JSON.stringify({ version: 1, entries }));
+      } catch (error) {
+        // Coordinate cache is optional; Qibla can still use live geocoding next time.
       }
     }
 
@@ -1957,7 +2099,10 @@
     }
 
     async function fetchTimings(address, date) {
-      const params = new URLSearchParams({ address });
+      const params = new URLSearchParams({
+        address,
+        school: getSelectedSchool()
+      });
       const response = await fetch(`${API_BASE_URL}/${formatApiDate(date)}?${params}`);
       const payload = await response.json();
 
@@ -1971,7 +2116,8 @@
     async function fetchTimingsByCoordinates(coords, date) {
       const params = new URLSearchParams({
         latitude: String(coords.latitude),
-        longitude: String(coords.longitude)
+        longitude: String(coords.longitude),
+        school: getSelectedSchool()
       });
       const response = await fetch(`${API_COORDS_URL}/${formatApiDate(date)}?${params}`);
       const payload = await response.json();
@@ -2002,6 +2148,42 @@
           return `${city}, ${country}`;
         }
         return city || country || null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function resolveCityCoordinates(city) {
+      const cachedCoords = getCachedCityCoords(city);
+      if (cachedCoords) {
+        return cachedCoords.coords;
+      }
+
+      try {
+        const params = new URLSearchParams({
+          q: city,
+          format: "json",
+          limit: "1"
+        });
+        const response = await fetch(`${GEOCODE_URL}?${params}`, {
+          headers: { Accept: "application/json" }
+        });
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = await response.json();
+        const place = Array.isArray(data) ? data[0] : null;
+        const coords = getValidCoords({
+          latitude: place && place.lat,
+          longitude: place && place.lon
+        });
+        if (!coords) {
+          return null;
+        }
+
+        saveCityCoords(city, coords);
+        return coords;
       } catch (error) {
         return null;
       }
@@ -2123,6 +2305,36 @@
       return { tomorrowPayload };
     }
 
+    async function renderCachedCitySchedule(cache, options = {}) {
+      if (!cache || !cache.todayPayload) {
+        return false;
+      }
+
+      const selectedCity = selectCityInDropdown(cache.label);
+      const canUseCachedQiblaCoords = options.trustCachedQiblaCoords !== false;
+      const qiblaCoords = getValidCoords(options.qiblaCoords) ||
+        (canUseCachedQiblaCoords ? getValidCoords(cache.qiblaCoords) : null) ||
+        lastQiblaCoords;
+      lastQiblaCoords = qiblaCoords || lastQiblaCoords;
+      const savedAt = formatCachedAt(cache.savedAt);
+      const savedText = savedAt ? ` Saved ${savedAt}.` : "";
+      const message = options.message || `Showing cached salah times for ${selectedCity} today.${savedText}`;
+
+      await renderSchedule(
+        selectedCity,
+        cache.todayPayload,
+        cache.tomorrowPayload ? async () => cache.tomorrowPayload : null,
+        {
+          allowTomorrowFailure: true,
+          offline: true,
+          qiblaCoords,
+          message
+        }
+      );
+      saveLastSchedule(selectedCity, cache.todayPayload, cache.tomorrowPayload, qiblaCoords);
+      return true;
+    }
+
     async function showCachedSchedule(options = {}) {
       const cache = getLastSchedule();
       if (!cache) {
@@ -2149,6 +2361,23 @@
     }
 
     async function loadCity(city, keepCurrentView = false) {
+      const requestDate = new Date();
+      const cityQiblaCoords = await resolveCityCoordinates(city);
+      lastQiblaCoords = cityQiblaCoords;
+      const cachedSchedule = getCachedCitySchedule(city, requestDate);
+      if (cachedSchedule) {
+        const trustCachedQiblaCoords = cachedSchedule.qiblaCoordsSource === "city";
+        await renderCachedCitySchedule(cachedSchedule, {
+          qiblaCoords: cityQiblaCoords,
+          trustCachedQiblaCoords,
+          message: `Showing cached salah times for ${city} today.`
+        });
+        if (cityQiblaCoords) {
+          saveDailyCitySchedule(city, requestDate, cachedSchedule.todayPayload, cachedSchedule.tomorrowPayload, cityQiblaCoords, "city");
+        }
+        return;
+      }
+
       if (keepCurrentView) {
         messageLine.textContent = `Updating times for ${city}...`;
         messageLine.classList.add("offline");
@@ -2158,11 +2387,12 @@
       }
 
       try {
-        const todayPayload = await fetchTimings(city, new Date());
+        const todayPayload = await fetchTimings(city, requestDate);
         const schedule = await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date), {
-          qiblaCoords: lastQiblaCoords
+          qiblaCoords: cityQiblaCoords
         });
-        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload, lastQiblaCoords);
+        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
+        saveDailyCitySchedule(city, requestDate, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
       } catch (error) {
         if (!(await showCachedSchedule())) {
           showLoadError(error);
@@ -2171,6 +2401,7 @@
     }
 
     async function loadCurrentLocation(position, keepCurrentView = false) {
+      const requestDate = new Date();
       const coords = {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
@@ -2192,13 +2423,25 @@
         }
 
         const selectedCity = selectCityInDropdown(locationName);
-        const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
+        const cachedSchedule = getCachedCitySchedule(selectedCity, requestDate);
+        if (cachedSchedule) {
+          await renderCachedCitySchedule(cachedSchedule, {
+            qiblaCoords: lastQiblaCoords,
+            trustCachedQiblaCoords: false,
+            message: `Showing cached salah times for ${selectedCity} today while using your current Qibla direction.`
+          });
+          saveDailyCitySchedule(selectedCity, requestDate, cachedSchedule.todayPayload, cachedSchedule.tomorrowPayload, lastQiblaCoords, "device");
+          return;
+        }
+
+        const todayPayload = await fetchTimingsByCoordinates(coords, requestDate);
         const schedule = await renderSchedule(selectedCity, todayPayload, (date) =>
           fetchTimingsByCoordinates(coords, date), {
             qiblaCoords: lastQiblaCoords
           }
         );
-        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload, lastQiblaCoords);
+        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload, lastQiblaCoords, "device");
+        saveDailyCitySchedule(selectedCity, requestDate, todayPayload, schedule.tomorrowPayload, lastQiblaCoords, "device");
       } catch (error) {
         await loadCity(DEFAULT_CITY, keepCurrentView);
       }
@@ -2289,6 +2532,10 @@
         customCityInput.value = "";
         loadCity(citySelect.value);
       });
+      schoolSelect.addEventListener("change", () => {
+        const city = citySelect.value || DEFAULT_CITY;
+        loadCity(city);
+      });
       customCityToggle.addEventListener("change", () => {
         customCity.classList.toggle("open", customCityToggle.checked);
         if (customCityToggle.checked) {
@@ -2307,6 +2554,7 @@
       settingsToggle.addEventListener("click", () => {
         const isOpen = settingsPanel.classList.toggle("open");
         settingsPanel.hidden = !isOpen;
+        actionsPanel.classList.toggle("open", isOpen || installButton.classList.contains("available"));
         settingsToggle.setAttribute("aria-expanded", String(isOpen));
       });
       installButton.addEventListener("click", installApp);
@@ -2326,6 +2574,7 @@
       installButton.disabled = true;
       installButton.classList.remove("available");
       installHelp.classList.remove("available");
+      actionsPanel.classList.toggle("open", settingsPanel.classList.contains("open"));
 
       if (result.outcome === "accepted") {
         messageLine.textContent = "Salah Times was added to your home screen.";
@@ -2351,6 +2600,7 @@
       installButton.disabled = false;
       installButton.classList.add("available");
       installHelp.classList.add("available");
+      actionsPanel.classList.add("open");
       installHelp.textContent = "Tap Install App to add Salah Times to your home screen.";
     });
 
@@ -2359,6 +2609,7 @@
       installButton.disabled = true;
       installButton.classList.remove("available");
       installHelp.classList.remove("available");
+      actionsPanel.classList.toggle("open", settingsPanel.classList.contains("open"));
       installHelp.textContent = "Salah Times is installed.";
       messageLine.textContent = "Salah Times was added to your home screen.";
       messageLine.classList.remove("error");
