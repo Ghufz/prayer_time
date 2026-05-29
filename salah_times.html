@@ -15,16 +15,19 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f7f2;
-      --panel: #ffffff;
-      --ink: #1d2a2a;
-      --muted: #637171;
-      --line: #dbe2d7;
-      --accent: #1b806a;
-      --accent-soft: #e7f4ef;
-      --warn: #9b5a12;
-      --warn-soft: #fff3dc;
-      --shadow: 0 16px 50px rgba(26, 45, 45, 0.12);
+      --bg: #f7f4ec;
+      --panel: #fffdf8;
+      --ink: #172625;
+      --muted: #667472;
+      --line: #e7dfcf;
+      --accent: #0f6b5b;
+      --accent-deep: #174f47;
+      --accent-soft: #eaf6f2;
+      --gold: #d9a441;
+      --warn: #8a5b18;
+      --warn-soft: #fff3d2;
+      --rose-soft: #fff0ec;
+      --shadow: 0 18px 44px rgba(34, 45, 42, 0.12);
     }
 
     * {
@@ -34,59 +37,106 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        linear-gradient(135deg, rgba(27, 128, 106, 0.11), transparent 34%),
-        linear-gradient(315deg, rgba(34, 87, 122, 0.1), transparent 38%),
-        var(--bg);
+      background: linear-gradient(180deg, #fdfaf1 0%, var(--bg) 54%, #efe8dc 100%);
       color: var(--ink);
       font-family: "Segoe UI", Arial, sans-serif;
     }
 
     main {
-      width: min(980px, calc(100% - 32px));
+      width: min(940px, calc(100% - 28px));
       margin: 0 auto;
-      padding: 38px 0;
+      padding: 22px 0 30px;
     }
 
     .topbar {
-      display: flex;
-      align-items: end;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+      align-items: stretch;
       justify-content: space-between;
       gap: 18px;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(15, 107, 91, 0.98), rgba(23, 79, 71, 0.98)),
+        var(--accent);
+      box-shadow: 0 24px 56px rgba(15, 107, 91, 0.28);
+      color: #ffffff;
+      padding: 18px;
     }
 
     .title-block {
       display: grid;
-      gap: 6px;
+      align-content: center;
+      gap: 14px;
       min-width: 0;
+      flex: 1 1 auto;
+      padding: 2px 0;
     }
 
     .title-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
+      gap: 16px;
       width: 100%;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .app-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .app-mark img {
+      width: 64px;
+      height: 64px;
+      display: block;
+    }
+
+    .title-copy {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(2rem, 5vw, 3.4rem);
-      line-height: 1.04;
+      color: #ffffff;
+      font-size: 2.55rem;
+      line-height: 1.05;
       letter-spacing: 0;
     }
 
     .subtitle {
       margin: 0;
-      color: var(--muted);
-      font-size: 1rem;
+      max-width: 520px;
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 0.96rem;
     }
 
     .actions {
       display: grid;
       gap: 10px;
       min-width: min(340px, 100%);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 8px;
+      background: rgba(255, 253, 248, 0.96);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+      padding: 14px;
     }
 
     .controls {
@@ -96,8 +146,10 @@
 
     label {
       color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 650;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     select,
@@ -108,8 +160,8 @@
       background: var(--panel);
       color: var(--ink);
       font: inherit;
-      padding: 12px 14px;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+      padding: 12px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
     .custom-city {
@@ -123,8 +175,10 @@
       gap: 9px;
       color: #7b6b58;
       cursor: pointer;
-      font-size: 0.93rem;
+      font-size: 0.88rem;
       font-weight: 650;
+      letter-spacing: 0;
+      text-transform: none;
     }
 
     .custom-toggle input {
@@ -152,12 +206,13 @@
       width: 100%;
       border: 0;
       border-radius: 8px;
-      background: var(--accent);
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
       color: #ffffff;
       cursor: pointer;
       font: inherit;
       font-weight: 750;
       padding: 12px 14px;
+      box-shadow: 0 10px 22px rgba(15, 107, 91, 0.18);
     }
 
     .icon {
@@ -209,9 +264,10 @@
     }
 
     .secondary-button {
-      border: 1px solid var(--line);
-      background: #ffffff;
-      color: var(--ink);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
     }
 
     .settings-control {
@@ -221,10 +277,11 @@
     }
 
     .settings-gear {
-      width: 44px;
-      min-width: 44px;
-      height: 44px;
+      width: 42px;
+      min-width: 42px;
+      height: 42px;
       padding: 0;
+      color: #ffffff;
     }
 
     .settings-panel {
@@ -232,7 +289,7 @@
       gap: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fbfcf8;
+      background: #fbf7ee;
       padding: 12px;
     }
 
@@ -276,30 +333,44 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 10px;
       margin-bottom: 14px;
       color: var(--muted);
       font-size: 0.95rem;
     }
 
+    #location-line {
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      min-width: min(310px, 100%);
+      border: 1px solid rgba(15, 107, 91, 0.14);
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--muted);
+      padding: 12px 14px;
+      box-shadow: 0 12px 32px rgba(34, 45, 42, 0.08);
+    }
+
     .status-bar strong {
-      color: var(--ink);
+      color: var(--accent-deep);
     }
 
     .date-line {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      width: min(430px, 100%);
+      width: min(450px, 100%);
     }
 
     .date-chip {
       display: grid;
-      gap: 2px;
+      gap: 4px;
       border: 1px solid transparent;
       border-radius: 8px;
-      padding: 8px 11px;
+      padding: 11px;
       min-width: 0;
+      box-shadow: 0 12px 32px rgba(34, 45, 42, 0.08);
     }
 
     .date-chip span {
@@ -310,31 +381,31 @@
     }
 
     .date-chip strong {
-      font-size: 0.94rem;
-      line-height: 1.25;
+      font-size: 0.98rem;
+      line-height: 1.15;
     }
 
     .date-chip.gregorian {
-      border-color: #cfe0f2;
+      border-color: transparent;
       background: #edf5ff;
       color: #22577a;
     }
 
     .date-chip.hijri {
-      border-color: #ead6ad;
-      background: #fff5df;
+      border-color: transparent;
+      background: var(--warn-soft);
       color: #8a5b18;
     }
 
     .sun-panel {
       display: grid;
       gap: 10px;
-      margin-bottom: 16px;
-      border: 1px solid #f0d7a8;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
       border-radius: 8px;
-      background: linear-gradient(180deg, #fff9ed, #ffffff);
+      background: rgba(255, 253, 248, 0.92);
       box-shadow: var(--shadow);
-      padding: 12px;
+      padding: 14px;
     }
 
     .sun-panel-header {
@@ -350,7 +421,7 @@
     }
 
     .sun-panel-title strong {
-      color: #8a5b18;
+      color: var(--warn);
       font-size: 0.82rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -372,11 +443,10 @@
       display: grid;
       grid-template-columns: 34px minmax(0, 1fr);
       align-items: center;
-      gap: 9px;
+      gap: 8px;
       min-width: 0;
-      border: 1px solid transparent;
       border-radius: 8px;
-      padding: 8px 11px;
+      padding: 9px;
     }
 
     .sun-label {
@@ -392,7 +462,7 @@
       width: 34px;
       height: 34px;
       border-radius: 8px;
-      background: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.58);
     }
 
     .sun-icon .icon {
@@ -401,14 +471,12 @@
     }
 
     .sun-chip.sunrise {
-      border-color: #f3cf83;
-      background: #fff3d4;
+      background: var(--warn-soft);
       color: #8a5b18;
     }
 
     .sun-chip.sunset {
-      border-color: #f0b5a1;
-      background: #fff0ec;
+      background: var(--rose-soft);
       color: #9d3f2f;
     }
 
@@ -430,7 +498,7 @@
       overflow: hidden;
       border-radius: 8px;
       background:
-        linear-gradient(180deg, #bfe4ff 0%, #e7f5ff 52%, #fff3d4 100%),
+        linear-gradient(180deg, #c8e8ff 0%, #edf8ff 60%, #fff1c8 100%),
         #d9efff;
     }
 
@@ -441,7 +509,7 @@
     }
 
     .sun-arc {
-      stroke: #f2b84b;
+      stroke: var(--gold);
       stroke-width: 4;
       stroke-linecap: round;
       fill: none;
@@ -454,8 +522,8 @@
     }
 
     .sun-marker {
-      fill: #f5a623;
-      filter: drop-shadow(0 7px 14px rgba(155, 90, 18, 0.32));
+      fill: #f5b942;
+      filter: drop-shadow(0 7px 14px rgba(138, 91, 24, 0.3));
     }
 
     .sun-marker-halo {
@@ -483,17 +551,17 @@
 
     th,
     td {
-      padding: 16px 18px;
+      padding: 14px 16px;
       text-align: left;
       border-bottom: 1px solid var(--line);
     }
 
     th {
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      background: #fbfcf8;
+      background: #fbf7ee;
     }
 
     th:nth-child(1),
@@ -516,8 +584,8 @@
     }
 
     tbody tr.upcoming {
-      background: #fff4d8;
-      box-shadow: inset 4px 0 0 #f5a623;
+      background: var(--warn-soft);
+      box-shadow: inset 4px 0 0 var(--gold);
     }
 
     tbody tr.current {
@@ -540,22 +608,22 @@
       max-width: 100%;
       min-height: 28px;
       border-radius: 999px;
-      padding: 4px 10px;
+      padding: 5px 9px;
       color: var(--accent);
-      background: rgba(27, 128, 106, 0.12);
-      font-size: 0.85rem;
-      font-weight: 750;
+      background: rgba(15, 107, 91, 0.12);
+      font-size: 0.76rem;
+      font-weight: 800;
       white-space: nowrap;
     }
 
     .badge.current {
       color: var(--accent);
-      background: rgba(27, 128, 106, 0.12);
+      background: rgba(15, 107, 91, 0.12);
     }
 
     .badge.upcoming {
       color: #8a5b18;
-      background: rgba(245, 166, 35, 0.2);
+      background: rgba(217, 164, 65, 0.22);
     }
 
     .status-cell {
@@ -570,7 +638,7 @@
       align-items: center;
       min-height: 24px;
       border-radius: 999px;
-      background: #fff3dc;
+      background: var(--warn-soft);
       color: #8a5b18;
       font-size: 0.74rem;
       font-weight: 800;
@@ -588,14 +656,14 @@
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      margin-top: 16px;
-      border: 1px solid rgba(27, 128, 106, 0.24);
+      margin-top: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 8px;
       background:
-        linear-gradient(135deg, rgba(27, 128, 106, 0.96), rgba(34, 87, 122, 0.94)),
+        linear-gradient(135deg, rgba(15, 107, 91, 0.98), rgba(23, 79, 71, 0.98)),
         var(--accent);
-      box-shadow: 0 18px 48px rgba(27, 128, 106, 0.24);
-      padding: 20px;
+      box-shadow: 0 24px 56px rgba(15, 107, 91, 0.28);
+      padding: 22px;
       color: #ffffff;
     }
 
@@ -610,7 +678,7 @@
 
     #next-line {
       color: #ffffff;
-      font-size: clamp(1.35rem, 4vw, 2.05rem);
+      font-size: 1.85rem;
       font-weight: 850;
       line-height: 1.1;
     }
@@ -620,7 +688,7 @@
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.16);
       color: #ffffff;
-      font-size: clamp(1.15rem, 3vw, 1.65rem);
+      font-size: 1.45rem;
       font-weight: 850;
       font-variant-numeric: tabular-nums;
       padding: 12px 14px;
@@ -642,19 +710,54 @@
 
     @media (max-width: 720px) {
       main {
-        width: min(100% - 22px, 980px);
-        padding: 24px 0;
+        width: min(100% - 22px, 940px);
+        padding: 18px 0 24px;
       }
 
-      .topbar,
+      .topbar {
+        grid-template-columns: 1fr;
+        padding: 14px;
+      }
+
       .status-bar,
       .next {
         align-items: stretch;
         flex-direction: column;
       }
 
+      .actions {
+        min-width: 0;
+      }
+
       .title-row {
         align-items: start;
+      }
+
+      .app-mark,
+      .app-mark img {
+        width: 56px;
+        height: 56px;
+      }
+
+      h1 {
+        font-size: 1.9rem;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+      }
+
+      #location-line,
+      .date-line {
+        width: 100%;
+      }
+
+      #next-line {
+        font-size: 1.45rem;
+      }
+
+      .remaining {
+        font-size: 1.18rem;
       }
 
       th,
@@ -770,7 +873,15 @@
     <section class="topbar" aria-labelledby="page-title">
       <div class="title-block">
         <div class="title-row">
-          <h1 id="page-title">Salah Times</h1>
+          <div class="brand-lockup">
+            <span class="app-mark" aria-hidden="true">
+              <img src="icons/salah-icon.svg" alt="">
+            </span>
+            <div class="title-copy">
+              <h1 id="page-title">Salah Times</h1>
+              <p class="subtitle">Track today&apos;s five daily salah times, with the current prayer and the next prayer clearly highlighted.</p>
+            </div>
+          </div>
           <div class="settings-control">
             <button id="settings-toggle" class="secondary-button settings-gear" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settings-panel" title="Settings">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -781,7 +892,6 @@
             </button>
           </div>
         </div>
-        <p class="subtitle">Track today&apos;s five daily salah times, with the current prayer and the next prayer clearly highlighted.</p>
       </div>
 
       <div class="actions">

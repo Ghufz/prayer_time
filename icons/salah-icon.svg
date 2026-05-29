@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">Salah Times icon</title>
+  <title id="title">Salah Times crescent clock icon</title>
   <rect width="512" height="512" rx="92" fill="#1b806a"/>
-  <path d="M256 91c-15 78-80 101-80 174 0 49 35 89 80 89s80-40 80-89c0-73-65-96-80-174Z" fill="#f6f7f2"/>
-  <path d="M256 134c22 52 50 78 50 131 0 34-22 61-50 61s-50-27-50-61c0-53 28-79 50-131Z" fill="#d8efe7"/>
-  <path d="M149 399h214" fill="none" stroke="#f6f7f2" stroke-width="28" stroke-linecap="round"/>
-  <path d="M188 433h136" fill="none" stroke="#f6f7f2" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="190" fill="#207f6c"/>
+  <path d="M280 115c-69 22-119 86-119 162 0 91 74 165 165 165 24 0 47-5 67-14-30 43-80 71-137 71-92 0-167-75-167-167 0-91 73-165 164-167 9-20 18-36 27-50Z" fill="#f6f7f2"/>
+  <circle cx="345" cy="344" r="79" fill="#f5b942"/>
+  <circle cx="345" cy="344" r="58" fill="#fff9ed"/>
+  <path d="M345 312v36l27 19" fill="none" stroke="#1b806a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M345 290v12M345 386v12M291 344h12M387 344h12" fill="none" stroke="#1b806a" stroke-width="12" stroke-linecap="round"/>
 </svg>
