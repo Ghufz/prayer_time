@@ -535,6 +535,107 @@
       font-size: 0.9rem;
     }
 
+    .qibla-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 112px;
+      align-items: center;
+      gap: 14px;
+      margin-top: 14px;
+      border: 1px solid rgba(15, 107, 91, 0.18);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, rgba(234, 246, 242, 0.96), rgba(255, 253, 248, 0.96)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .qibla-title {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .qibla-title strong {
+      color: var(--accent);
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .qibla-title span {
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.35;
+    }
+
+    .qibla-bearing {
+      color: var(--ink);
+      font-size: 1.75rem;
+      font-weight: 850;
+      line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .qibla-compass {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 112px;
+      height: 112px;
+      border: 1px solid rgba(15, 107, 91, 0.16);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, #ffffff 0 34%, rgba(255, 255, 255, 0) 35%),
+        conic-gradient(from 0deg, rgba(15, 107, 91, 0.1), rgba(217, 164, 65, 0.18), rgba(15, 107, 91, 0.1));
+      box-shadow: inset 0 0 0 8px rgba(255, 255, 255, 0.58);
+      color: var(--accent-deep);
+      flex: 0 0 auto;
+    }
+
+    .qibla-compass span {
+      position: absolute;
+      font-size: 0.68rem;
+      font-weight: 850;
+    }
+
+    .qibla-north {
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .qibla-east {
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+    }
+
+    .qibla-south {
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .qibla-west {
+      top: 50%;
+      left: 10px;
+      transform: translateY(-50%);
+    }
+
+    .qibla-arrow {
+      width: 64px;
+      height: 64px;
+      transform: rotate(0deg);
+      transform-origin: 50% 50%;
+      transition: transform 650ms ease;
+    }
+
+    .qibla-arrow path {
+      fill: var(--accent);
+      filter: drop-shadow(0 5px 8px rgba(15, 107, 91, 0.24));
+    }
+
     .table-wrap {
       overflow-x: hidden;
       border: 1px solid var(--line);
@@ -784,6 +885,14 @@
         flex-direction: column;
       }
 
+      .qibla-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .qibla-compass {
+        justify-self: center;
+      }
+
       .sun-path-wrap,
       .sun-path {
         min-height: 96px;
@@ -1007,6 +1116,24 @@
       <div class="remaining" id="remaining-line"></div>
     </section>
 
+    <section class="qibla-panel" aria-label="Qibla direction">
+      <div class="qibla-title">
+        <strong>Qibla Direction</strong>
+        <div class="qibla-bearing" id="qibla-bearing">--</div>
+        <span id="qibla-line">Location is needed to show Qibla direction.</span>
+      </div>
+      <div class="qibla-compass" aria-hidden="true">
+        <span class="qibla-north">N</span>
+        <span class="qibla-east">E</span>
+        <span class="qibla-south">S</span>
+        <span class="qibla-west">W</span>
+        <svg class="qibla-arrow" id="qibla-arrow" viewBox="0 0 100 100">
+          <path d="M50 7 66 56 50 47 34 56 50 7Z"></path>
+          <circle cx="50" cy="62" r="8" fill="#d9a441"></circle>
+        </svg>
+      </div>
+    </section>
+
     <p class="message" id="message-line"></p>
   </main>
 
@@ -1014,6 +1141,7 @@
     const API_BASE_URL = "https://api.aladhan.com/v1/timingsByAddress";
     const API_COORDS_URL = "https://api.aladhan.com/v1/timings";
     const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
+    const KAABA_COORDS = { latitude: 21.422487, longitude: 39.826206 };
     const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
     const CITY_GROUPS = [
       {
@@ -1136,6 +1264,9 @@
     const sunMarker = document.querySelector("#sun-marker");
     const sunMarkerHalo = document.querySelector("#sun-marker-halo");
     const sunArcPath = document.querySelector("#sun-arc-path");
+    const qiblaBearingLine = document.querySelector("#qibla-bearing");
+    const qiblaLine = document.querySelector("#qibla-line");
+    const qiblaArrow = document.querySelector("#qibla-arrow");
     const timesBody = document.querySelector("#times-body");
     const nextLine = document.querySelector("#next-line");
     const remainingLine = document.querySelector("#remaining-line");
@@ -1143,6 +1274,7 @@
     let deferredInstallPrompt = null;
     let sunAnimationFrame = null;
     let currentSalahCountdownTimer = null;
+    let lastQiblaCoords = null;
 
     function setCitySelectPlaceholder(label) {
       let option = citySelect.querySelector("[data-city-placeholder='true']");
@@ -1158,14 +1290,15 @@
       citySelect.value = CITY_PLACEHOLDER_VALUE;
     }
 
-    function saveLastSchedule(label, todayPayload, tomorrowPayload = null) {
+    function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null) {
       try {
         localStorage.setItem(LAST_SCHEDULE_CACHE_KEY, JSON.stringify({
           version: 1,
           label,
           savedAt: new Date().toISOString(),
           todayPayload,
-          tomorrowPayload
+          tomorrowPayload,
+          qiblaCoords: getValidCoords(qiblaCoords)
         }));
       } catch (error) {
         // Cache storage can be unavailable in private mode or when storage is full.
@@ -1205,6 +1338,27 @@
         hour: "numeric",
         minute: "2-digit"
       }).format(date);
+    }
+
+    function getValidCoords(coords) {
+      if (!coords) {
+        return null;
+      }
+
+      const latitude = Number(coords.latitude);
+      const longitude = Number(coords.longitude);
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        return null;
+      }
+
+      return { latitude, longitude };
     }
 
     function normalizeLocationPart(value) {
@@ -1302,6 +1456,18 @@
 
     function clamp(value, min, max) {
       return Math.min(Math.max(value, min), max);
+    }
+
+    function toRadians(degrees) {
+      return degrees * Math.PI / 180;
+    }
+
+    function toDegrees(radians) {
+      return radians * 180 / Math.PI;
+    }
+
+    function normalizeBearing(degrees) {
+      return (degrees + 360) % 360;
     }
 
     function formatApiDate(date) {
@@ -1597,6 +1763,64 @@
       setSunMarker(progress, true);
     }
 
+    function calculateQiblaBearing(coords) {
+      const location = getValidCoords(coords);
+      if (!location) {
+        return null;
+      }
+
+      const latitude = toRadians(location.latitude);
+      const longitude = toRadians(location.longitude);
+      const kaabaLatitude = toRadians(KAABA_COORDS.latitude);
+      const kaabaLongitude = toRadians(KAABA_COORDS.longitude);
+      const longitudeDiff = kaabaLongitude - longitude;
+      const y = Math.sin(longitudeDiff);
+      const x = Math.cos(latitude) * Math.tan(kaabaLatitude) - Math.sin(latitude) * Math.cos(longitudeDiff);
+      return normalizeBearing(toDegrees(Math.atan2(y, x)));
+    }
+
+    function calculateDistanceKm(startCoords, endCoords) {
+      const start = getValidCoords(startCoords);
+      const end = getValidCoords(endCoords);
+      if (!start || !end) {
+        return null;
+      }
+
+      const earthRadiusKm = 6371;
+      const latDiff = toRadians(end.latitude - start.latitude);
+      const lngDiff = toRadians(end.longitude - start.longitude);
+      const startLat = toRadians(start.latitude);
+      const endLat = toRadians(end.latitude);
+      const a = Math.sin(latDiff / 2) ** 2 +
+        Math.cos(startLat) * Math.cos(endLat) * Math.sin(lngDiff / 2) ** 2;
+      return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function formatCompassDirection(bearing) {
+      const directions = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+      return directions[Math.round(bearing / 22.5) % directions.length];
+    }
+
+    function renderQiblaDirection(coords) {
+      const location = getValidCoords(coords);
+      const bearing = calculateQiblaBearing(location);
+      if (bearing === null) {
+        qiblaBearingLine.textContent = "--";
+        qiblaLine.textContent = "Allow location access to show Qibla direction.";
+        qiblaArrow.style.transform = "rotate(0deg)";
+        return;
+      }
+
+      const roundedBearing = Math.round(bearing);
+      const direction = formatCompassDirection(bearing);
+      const distanceKm = calculateDistanceKm(location, KAABA_COORDS);
+      qiblaBearingLine.textContent = `${roundedBearing}° ${direction}`;
+      qiblaLine.textContent = distanceKm
+        ? `Face ${roundedBearing}° from north toward the Kaaba. About ${Math.round(distanceKm).toLocaleString("en-IN")} km to Makkah.`
+        : `Face ${roundedBearing}° from north toward the Kaaba.`;
+      qiblaArrow.style.transform = `rotate(${bearing}deg)`;
+    }
+
     function findUpcoming(payload) {
       const data = payload.data;
       const timezone = data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1815,7 +2039,7 @@
       startCurrentSalahCountdown(hasCurrent ? current : null);
     }
 
-    function renderSummary(payload, city, upcoming) {
+    function renderSummary(payload, city, upcoming, qiblaCoords = null) {
       const data = payload.data;
       const hijriDate = formatHijriDate(data.date.hijri, getHijriDateOffset(city, payload));
       renderLocation(city);
@@ -1824,6 +2048,7 @@
       renderDateChip("Hijri", hijriDate, "hijri");
       timezoneLine.textContent = data.meta.timezone || "Local timezone";
       renderSunPath(payload);
+      renderQiblaDirection(qiblaCoords || lastQiblaCoords);
 
       if (!upcoming) {
         nextLine.textContent = "No upcoming salah found in this schedule.";
@@ -1845,6 +2070,9 @@
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
       sunProgressLine.textContent = "Loading sunrise and sunset...";
+      qiblaBearingLine.textContent = "--";
+      qiblaLine.textContent = "Location is needed to show Qibla direction.";
+      qiblaArrow.style.transform = "rotate(0deg)";
       setSunMarker(0);
       nextLine.textContent = "Loading...";
       remainingLine.textContent = "";
@@ -1860,6 +2088,9 @@
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
       sunProgressLine.textContent = "Sunrise and sunset are unavailable.";
+      qiblaBearingLine.textContent = "--";
+      qiblaLine.textContent = "Location is needed to show Qibla direction.";
+      qiblaArrow.style.transform = "rotate(0deg)";
       setSunMarker(0);
       messageLine.textContent = error.message;
       messageLine.classList.add("error");
@@ -1885,7 +2116,7 @@
       }
 
       renderRows(todayPayload, upcoming, current);
-      renderSummary(todayPayload, label, upcoming);
+      renderSummary(todayPayload, label, upcoming, options.qiblaCoords || lastQiblaCoords);
       messageLine.textContent = options.message || "Times are provided by AlAdhan and may differ from local mosque calendars.";
       messageLine.classList.toggle("offline", Boolean(options.offline));
       messageLine.classList.toggle("error", Boolean(options.error));
@@ -1899,6 +2130,7 @@
       }
 
       const selectedCity = selectCityInDropdown(cache.label);
+      lastQiblaCoords = getValidCoords(cache.qiblaCoords) || lastQiblaCoords;
       const savedAt = formatCachedAt(cache.savedAt);
       const savedText = savedAt ? ` Saved ${savedAt}.` : "";
       const message = options.message || `Offline: showing the last saved salah times for ${selectedCity}.${savedText}`;
@@ -1909,6 +2141,7 @@
         {
           allowTomorrowFailure: true,
           offline: options.offline !== false,
+          qiblaCoords: cache.qiblaCoords || lastQiblaCoords,
           message
         }
       );
@@ -1926,8 +2159,10 @@
 
       try {
         const todayPayload = await fetchTimings(city, new Date());
-        const schedule = await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date));
-        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload);
+        const schedule = await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date), {
+          qiblaCoords: lastQiblaCoords
+        });
+        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload, lastQiblaCoords);
       } catch (error) {
         if (!(await showCachedSchedule())) {
           showLoadError(error);
@@ -1940,6 +2175,7 @@
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
       };
+      lastQiblaCoords = getValidCoords(coords);
       if (keepCurrentView) {
         messageLine.textContent = "Updating times for your detected location...";
         messageLine.classList.add("offline");
@@ -1958,9 +2194,11 @@
         const selectedCity = selectCityInDropdown(locationName);
         const todayPayload = await fetchTimingsByCoordinates(coords, new Date());
         const schedule = await renderSchedule(selectedCity, todayPayload, (date) =>
-          fetchTimingsByCoordinates(coords, date)
+          fetchTimingsByCoordinates(coords, date), {
+            qiblaCoords: lastQiblaCoords
+          }
         );
-        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload);
+        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload, lastQiblaCoords);
       } catch (error) {
         await loadCity(DEFAULT_CITY, keepCurrentView);
       }
