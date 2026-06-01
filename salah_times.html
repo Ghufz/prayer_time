@@ -2391,15 +2391,10 @@
         };
       }
 
-      const parsedTime = parseTiming(timing);
-      const timezone = payload.data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const now = getCurrentInTimezone(timezone);
-      const isDone = now.key === scheduleKey && parsedTime && parsedTime.minutes < now.minutes;
-
       return {
-        className: isDone ? "done" : "",
-        badge: isDone ? "Done" : "Today",
-        note: isDone ? "Completed" : "Scheduled"
+        className: "",
+        badge: "",
+        note: ""
       };
     }
 
@@ -2447,10 +2442,14 @@
         time.className = "mobile-prayer-time";
         time.textContent = timing;
 
-        const badge = document.createElement("span");
-        badge.className = `badge${status.className === "upcoming" ? " upcoming" : status.className === "current" ? " current" : ""}`;
-        badge.textContent = status.badge;
-        meta.append(time, badge);
+        meta.appendChild(time);
+
+        if (status.badge) {
+          const badge = document.createElement("span");
+          badge.className = `badge${status.className === "upcoming" ? " upcoming" : status.className === "current" ? " current" : ""}`;
+          badge.textContent = status.badge;
+          meta.appendChild(badge);
+        }
 
         if (status.className === "current") {
           const countdown = document.createElement("span");
