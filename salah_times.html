@@ -732,6 +732,16 @@
       background: rgba(217, 164, 65, 0.22);
     }
 
+    .badge.jummah {
+      color: #8a3f1c;
+      background: rgba(217, 118, 65, 0.18);
+    }
+
+    .badge.method {
+      color: #465b8f;
+      background: rgba(70, 91, 143, 0.13);
+    }
+
     .status-cell {
       display: flex;
       flex-wrap: wrap;
@@ -1478,6 +1488,10 @@
 
     function getSchoolLabel(school = getSelectedSchool()) {
       return school === "1" ? "Hanafi" : "Shafi / Maliki / Hanbali";
+    }
+
+    function getShortSchoolLabel(school = getSelectedSchool()) {
+      return school === "1" ? "Hanafi" : "Shafi";
     }
 
     function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
@@ -2370,6 +2384,33 @@
       return icons[prayer] || icons.Dhuhr;
     }
 
+    function isFridaySchedule(payload) {
+      const weekday = payload.data.date.gregorian.weekday && payload.data.date.gregorian.weekday.en;
+      if (weekday) {
+        return weekday.toLowerCase() === "friday";
+      }
+
+      const date = parseApiDate(payload.data.date.gregorian.date);
+      return new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() === 5;
+    }
+
+    function getMobilePrayerPills(prayer, status, payload) {
+      const pills = [];
+      if (status.badge) {
+        pills.push({ label: status.badge, className: status.className });
+      }
+
+      if (prayer === "Dhuhr" && isFridaySchedule(payload)) {
+        pills.push({ label: "Jummah", className: "jummah" });
+      }
+
+      if (prayer === "Asr") {
+        pills.push({ label: getShortSchoolLabel(), className: "method" });
+      }
+
+      return pills;
+    }
+
     function getMobilePrayerStatus(prayer, timing, payload, upcoming, current, hasCurrent) {
       const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
       const isCurrent = current && current.name === prayer && current.scheduleKey === scheduleKey;
@@ -2444,10 +2485,10 @@
 
         meta.appendChild(time);
 
-        if (status.badge) {
+        for (const pill of getMobilePrayerPills(prayer, status, payload)) {
           const badge = document.createElement("span");
-          badge.className = `badge${status.className === "upcoming" ? " upcoming" : status.className === "current" ? " current" : ""}`;
-          badge.textContent = status.badge;
+          badge.className = `badge${pill.className ? ` ${pill.className}` : ""}`;
+          badge.textContent = pill.label;
           meta.appendChild(badge);
         }
 
