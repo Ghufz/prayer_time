@@ -276,17 +276,24 @@
 
     .settings-control {
       display: flex;
+      align-items: center;
       justify-content: flex-end;
       margin-left: auto;
     }
 
     .settings-gear {
-      width: 42px;
-      min-width: 42px;
-      height: 42px;
+      width: 64px;
+      min-width: 64px;
+      height: 64px;
+      border-radius: 14px;
       padding: 0;
       color: #ffffff;
       background: rgba(255, 255, 255, 0.1);
+    }
+
+    .settings-gear .icon {
+      width: 26px;
+      height: 26px;
     }
 
     .settings-panel {
@@ -689,6 +696,26 @@
       border-bottom: 0;
     }
 
+    body.sunlight-mode tbody tr.salah-fajr:not(.current):not(.upcoming) {
+      background: linear-gradient(90deg, #edf2ff, #fffdf8);
+    }
+
+    body.sunlight-mode tbody tr.salah-dhuhr:not(.current):not(.upcoming) {
+      background: linear-gradient(90deg, #fff7dd, #fffdf8);
+    }
+
+    body.sunlight-mode tbody tr.salah-asr:not(.current):not(.upcoming) {
+      background: linear-gradient(90deg, #fff0d8, #fffaf0);
+    }
+
+    body.sunlight-mode tbody tr.salah-maghrib:not(.current):not(.upcoming) {
+      background: linear-gradient(90deg, #ffe9df, #fff8ef);
+    }
+
+    body.sunlight-mode tbody tr.salah-isha:not(.current):not(.upcoming) {
+      background: linear-gradient(90deg, #eef1fb, #fbfaf6);
+    }
+
     tbody tr.upcoming {
       background: var(--warn-soft);
       box-shadow: inset 4px 0 0 var(--gold);
@@ -788,6 +815,31 @@
       padding: 12px;
     }
 
+    body.sunlight-mode .mobile-prayer-card.salah-fajr:not(.current):not(.upcoming) {
+      border-color: #dbe4ff;
+      background: linear-gradient(135deg, #edf2ff, #fffdf8);
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-dhuhr:not(.current):not(.upcoming) {
+      border-color: #f4e2a8;
+      background: linear-gradient(135deg, #fff7dd, #fffdf8);
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-asr:not(.current):not(.upcoming) {
+      border-color: #efcf9b;
+      background: linear-gradient(135deg, #fff0d8, #fffaf0);
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-maghrib:not(.current):not(.upcoming) {
+      border-color: #f1c5b2;
+      background: linear-gradient(135deg, #ffe9df, #fff8ef);
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-isha:not(.current):not(.upcoming) {
+      border-color: #d9deed;
+      background: linear-gradient(135deg, #eef1fb, #fbfaf6);
+    }
+
     .mobile-prayer-card.current {
       border-color: rgba(15, 107, 91, 0.24);
       background: linear-gradient(135deg, #eaf6f2, #fbfffd);
@@ -832,6 +884,31 @@
     .mobile-prayer-card.done .mobile-prayer-icon {
       background: rgba(102, 116, 114, 0.1);
       color: #7a8582;
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-fajr:not(.current):not(.upcoming) .mobile-prayer-icon {
+      background: rgba(92, 112, 178, 0.12);
+      color: #5264a3;
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-dhuhr:not(.current):not(.upcoming) .mobile-prayer-icon {
+      background: rgba(217, 164, 65, 0.15);
+      color: #9a6b1d;
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-asr:not(.current):not(.upcoming) .mobile-prayer-icon {
+      background: rgba(214, 133, 49, 0.15);
+      color: #9a5c18;
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-maghrib:not(.current):not(.upcoming) .mobile-prayer-icon {
+      background: rgba(198, 96, 62, 0.14);
+      color: #9c4930;
+    }
+
+    body.sunlight-mode .mobile-prayer-card.salah-isha:not(.current):not(.upcoming) .mobile-prayer-icon {
+      background: rgba(59, 76, 128, 0.12);
+      color: #43517d;
     }
 
     .mobile-prayer-icon svg {
@@ -965,18 +1042,48 @@
         flex-direction: column;
       }
 
+      .next {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        padding: 12px;
+        box-shadow: 0 12px 28px rgba(15, 107, 91, 0.18);
+      }
+
+      .next > div {
+        min-width: 0;
+      }
+
+      .next strong {
+        margin-bottom: 3px;
+        font-size: 0.68rem;
+      }
+
       .actions {
         min-width: 0;
       }
 
       .title-row {
-        align-items: start;
+        align-items: center;
       }
 
       .app-mark,
       .app-mark img {
         width: 56px;
         height: 56px;
+      }
+
+      .settings-gear {
+        width: 56px;
+        min-width: 56px;
+        height: 56px;
+      }
+
+      .settings-gear .icon {
+        width: 24px;
+        height: 24px;
       }
 
       h1 {
@@ -993,11 +1100,17 @@
       }
 
       #next-line {
-        font-size: 1.45rem;
+        font-size: 1.02rem;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
       }
 
       .remaining {
-        font-size: 1.18rem;
+        align-self: center;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        padding: 7px 10px;
+        white-space: nowrap;
       }
 
       th,
@@ -1048,7 +1161,7 @@
       }
 
       .remaining {
-        white-space: normal;
+        white-space: nowrap;
       }
     }
 
@@ -1187,6 +1300,13 @@
             <select id="school-select" aria-label="Asr method">
               <option value="0">Shafi / Maliki / Hanbali</option>
               <option value="1">Hanafi</option>
+            </select>
+          </div>
+          <div class="controls">
+            <label for="display-mode-select">Display mode</label>
+            <select id="display-mode-select" aria-label="Display mode">
+              <option value="classic">Classic</option>
+              <option value="sunlight">Sunlight</option>
             </select>
           </div>
           <div class="custom-city">
@@ -1434,11 +1554,13 @@
     const DAILY_CITY_CACHE_LIMIT = 10;
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
+    const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
     const schoolSelect = document.querySelector("#school-select");
+    const displayModeSelect = document.querySelector("#display-mode-select");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
     const actionsPanel = document.querySelector(".actions");
@@ -1492,6 +1614,32 @@
 
     function getShortSchoolLabel(school = getSelectedSchool()) {
       return school === "1" ? "Hanafi" : "Shafi";
+    }
+
+    function getSavedDisplayMode() {
+      try {
+        return localStorage.getItem(DISPLAY_MODE_STORAGE_KEY) === "sunlight" ? "sunlight" : "classic";
+      } catch (error) {
+        return "classic";
+      }
+    }
+
+    function applyDisplayMode(mode, shouldSave = true) {
+      const displayMode = mode === "sunlight" ? "sunlight" : "classic";
+      document.body.classList.toggle("sunlight-mode", displayMode === "sunlight");
+      if (displayModeSelect) {
+        displayModeSelect.value = displayMode;
+      }
+
+      if (!shouldSave) {
+        return;
+      }
+
+      try {
+        localStorage.setItem(DISPLAY_MODE_STORAGE_KEY, displayMode);
+      } catch (error) {
+        // Display mode can still work for the current session if storage is unavailable.
+      }
     }
 
     function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
@@ -2394,6 +2542,10 @@
       return new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() === 5;
     }
 
+    function getPrayerClass(prayer) {
+      return `salah-${prayer.toLowerCase()}`;
+    }
+
     function getMobilePrayerPills(prayer, status, payload) {
       const pills = [];
       if (status.badge) {
@@ -2457,7 +2609,7 @@
         const timing = timings[prayer] || "-";
         const status = getMobilePrayerStatus(prayer, timing, payload, upcoming, current, hasCurrent);
         const card = document.createElement("article");
-        card.className = `mobile-prayer-card${status.className ? ` ${status.className}` : ""}`;
+        card.className = `mobile-prayer-card ${getPrayerClass(prayer)}${status.className ? ` ${status.className}` : ""}`;
 
         const icon = document.createElement("span");
         icon.className = "mobile-prayer-icon";
@@ -2513,6 +2665,7 @@
 
       for (const prayer of PRAYERS) {
         const row = document.createElement("tr");
+        row.classList.add(getPrayerClass(prayer));
         const isCurrent = current && current.name === prayer && current.scheduleKey === scheduleKey;
         const isUpcoming = !hasCurrent && upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
         if (isCurrent) {
@@ -2827,6 +2980,7 @@
 
     function init() {
       setCitySelectPlaceholder("Select city");
+      applyDisplayMode(getSavedDisplayMode(), false);
 
       for (const group of CITY_GROUPS) {
         const optionGroup = document.createElement("optgroup");
@@ -2854,6 +3008,9 @@
       schoolSelect.addEventListener("change", () => {
         const city = citySelect.value || DEFAULT_CITY;
         loadCity(city);
+      });
+      displayModeSelect.addEventListener("change", () => {
+        applyDisplayMode(displayModeSelect.value);
       });
       customCityToggle.addEventListener("change", () => {
         customCity.classList.toggle("open", customCityToggle.checked);

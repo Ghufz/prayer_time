@@ -2,9 +2,10 @@
   <title id="title">Salah Times crescent clock icon</title>
   <rect width="512" height="512" rx="92" fill="#1b806a"/>
   <circle cx="256" cy="256" r="190" fill="#207f6c"/>
-  <path d="M280 115c-69 22-119 86-119 162 0 91 74 165 165 165 24 0 47-5 67-14-30 43-80 71-137 71-92 0-167-75-167-167 0-91 73-165 164-167 9-20 18-36 27-50Z" fill="#f6f7f2"/>
-  <circle cx="345" cy="344" r="79" fill="#f5b942"/>
-  <circle cx="345" cy="344" r="58" fill="#fff9ed"/>
-  <path d="M345 312v36l27 19" fill="none" stroke="#1b806a" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M345 290v12M345 386v12M291 344h12M387 344h12" fill="none" stroke="#1b806a" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="218" cy="218" r="134" fill="#f6f7f2"/>
+  <circle cx="274" cy="196" r="132" fill="#207f6c"/>
+  <circle cx="278" cy="302" r="58" fill="#f5b942"/>
+  <circle cx="278" cy="302" r="42" fill="#fff9ed"/>
+  <path d="M278 278v27l20 14" fill="none" stroke="#1b806a" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M278 260v9M278 335v9M238 302h9M309 302h9" fill="none" stroke="#1b806a" stroke-width="9" stroke-linecap="round"/>
 </svg>
