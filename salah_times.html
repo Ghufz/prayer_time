@@ -757,6 +757,130 @@
       display: none;
     }
 
+    .mobile-schedule {
+      display: none;
+    }
+
+    .mobile-prayer-card,
+    .mobile-schedule-state {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 12px 28px rgba(34, 45, 42, 0.08);
+    }
+
+    .mobile-prayer-card {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      min-height: 76px;
+      padding: 12px;
+    }
+
+    .mobile-prayer-card.current {
+      border-color: rgba(15, 107, 91, 0.24);
+      background: linear-gradient(135deg, #eaf6f2, #fbfffd);
+      box-shadow:
+        inset 4px 0 0 var(--accent),
+        0 14px 32px rgba(15, 107, 91, 0.13);
+    }
+
+    .mobile-prayer-card.upcoming {
+      border-color: rgba(217, 164, 65, 0.32);
+      background: linear-gradient(135deg, #fff3d2, #fffdf6);
+      box-shadow:
+        inset 4px 0 0 var(--gold),
+        0 14px 32px rgba(138, 91, 24, 0.12);
+    }
+
+    .mobile-prayer-card.done {
+      color: #6b7673;
+      background: #fbfaf5;
+    }
+
+    .mobile-prayer-icon {
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: rgba(15, 107, 91, 0.1);
+      color: var(--accent);
+    }
+
+    .mobile-prayer-card.current .mobile-prayer-icon {
+      background: rgba(15, 107, 91, 0.16);
+      color: var(--accent-deep);
+    }
+
+    .mobile-prayer-card.upcoming .mobile-prayer-icon {
+      background: rgba(217, 164, 65, 0.22);
+      color: #8a5b18;
+    }
+
+    .mobile-prayer-card.done .mobile-prayer-icon {
+      background: rgba(102, 116, 114, 0.1);
+      color: #7a8582;
+    }
+
+    .mobile-prayer-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+
+    .mobile-prayer-main {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .mobile-prayer-title {
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+
+    .mobile-prayer-card.done .mobile-prayer-title {
+      color: #52615e;
+    }
+
+    .mobile-prayer-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 650;
+      line-height: 1.25;
+    }
+
+    .mobile-prayer-meta {
+      display: grid;
+      justify-items: end;
+      gap: 7px;
+      min-width: 82px;
+    }
+
+    .mobile-prayer-time {
+      color: var(--ink);
+      font-size: 1.22rem;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .mobile-schedule-state {
+      color: var(--muted);
+      font-weight: 700;
+      padding: 16px;
+      text-align: center;
+    }
+
     .next {
       display: flex;
       align-items: center;
@@ -885,6 +1009,15 @@
         font-size: 0.74rem;
       }
 
+      .table-wrap {
+        display: none;
+      }
+
+      .mobile-schedule {
+        display: grid;
+        gap: 10px;
+      }
+
       .sun-panel-header {
         align-items: stretch;
         flex-direction: column;
@@ -940,6 +1073,31 @@
         padding-inline: 6px;
       }
 
+      .mobile-prayer-card {
+        grid-template-columns: 40px minmax(0, 1fr) auto;
+        gap: 9px;
+        min-height: 72px;
+        padding: 10px;
+      }
+
+      .mobile-prayer-icon {
+        width: 40px;
+        height: 40px;
+      }
+
+      .mobile-prayer-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      .mobile-prayer-time {
+        font-size: 1.08rem;
+      }
+
+      .mobile-prayer-meta {
+        min-width: 76px;
+      }
+
       .date-line,
       .sun-times {
         gap: 6px;
@@ -993,7 +1151,7 @@
             </span>
             <div class="title-copy">
               <h1 id="page-title">Salah Times</h1>
-              <p class="subtitle">Track today&apos;s five daily salah times, with the current prayer and the next prayer clearly highlighted.</p>
+              <p class="subtitle">Track today&apos;s five daily salah times.</p>
             </div>
           </div>
           <div class="settings-control">
@@ -1118,6 +1276,10 @@
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="mobile-schedule" id="mobile-times-list" aria-label="Salah time list">
+      <div class="mobile-schedule-state">Loading salah times...</div>
     </section>
 
     <section class="next" aria-live="polite">
@@ -1287,6 +1449,7 @@
     const qiblaLine = document.querySelector("#qibla-line");
     const qiblaArrow = document.querySelector("#qibla-arrow");
     const timesBody = document.querySelector("#times-body");
+    const mobileTimesList = document.querySelector("#mobile-times-list");
     const nextLine = document.querySelector("#next-line");
     const remainingLine = document.querySelector("#remaining-line");
     const messageLine = document.querySelector("#message-line");
@@ -2053,28 +2216,34 @@
     }
 
     function updateCurrentSalahCountdown(current) {
-      const countdown = timesBody.querySelector("[data-current-countdown]");
-      if (!countdown) {
+      const countdowns = document.querySelectorAll("[data-current-countdown]");
+      if (!countdowns.length) {
         stopCurrentSalahCountdown();
         return;
       }
 
       const remainingSeconds = getCurrentSalahRemainingSeconds(current);
       if (remainingSeconds === null || remainingSeconds > 15 * 60) {
-        countdown.hidden = true;
-        countdown.textContent = "";
+        countdowns.forEach((countdown) => {
+          countdown.hidden = true;
+          countdown.textContent = "";
+        });
         return;
       }
 
       if (remainingSeconds <= 0) {
-        countdown.hidden = false;
-        countdown.textContent = "Ends now";
+        countdowns.forEach((countdown) => {
+          countdown.hidden = false;
+          countdown.textContent = "Ends now";
+        });
         stopCurrentSalahCountdown();
         return;
       }
 
-      countdown.hidden = false;
-      countdown.textContent = `Ends in ${formatCountdownSeconds(remainingSeconds)}`;
+      countdowns.forEach((countdown) => {
+        countdown.hidden = false;
+        countdown.textContent = `Ends in ${formatCountdownSeconds(remainingSeconds)}`;
+      });
     }
 
     function startCurrentSalahCountdown(current) {
@@ -2189,6 +2358,113 @@
       }
     }
 
+    function getPrayerIcon(prayer) {
+      const icons = {
+        Fajr: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 4.5a7.5 7.5 0 1 0 0 15 8 8 0 0 1 0-15Z"></path><path d="M7 5h.01"></path><path d="M4.5 9h.01"></path></svg>',
+        Dhuhr: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>',
+        Asr: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V2"></path><path d="m5.64 7.64-1.41-1.41"></path><path d="M4 14H2"></path><path d="m20 14h2"></path><path d="m18.36 7.64 1.41-1.41"></path><path d="M16 14a4 4 0 0 0-8 0"></path><path d="M5 18h14"></path><path d="M8 21h8"></path></svg>',
+        Maghrib: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 10V3"></path><path d="m8 7 4 4 4-4"></path><path d="M4 17a8 8 0 0 1 16 0"></path><path d="M3 17h18"></path><path d="M5 21h14"></path></svg>',
+        Isha: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"></path><path d="M16 4h.01"></path><path d="M20 8h.01"></path></svg>'
+      };
+
+      return icons[prayer] || icons.Dhuhr;
+    }
+
+    function getMobilePrayerStatus(prayer, timing, payload, upcoming, current, hasCurrent) {
+      const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
+      const isCurrent = current && current.name === prayer && current.scheduleKey === scheduleKey;
+      const isUpcoming = !hasCurrent && upcoming && upcoming.name === prayer && upcoming.scheduleKey === scheduleKey;
+
+      if (isCurrent) {
+        return {
+          className: "current",
+          badge: "Current",
+          note: `Ends at ${current.endDisplayTime}`
+        };
+      }
+
+      if (isUpcoming) {
+        return {
+          className: "upcoming",
+          badge: "Upcoming",
+          note: formatRemaining(upcoming.minutesUntil)
+        };
+      }
+
+      const parsedTime = parseTiming(timing);
+      const timezone = payload.data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const now = getCurrentInTimezone(timezone);
+      const isDone = now.key === scheduleKey && parsedTime && parsedTime.minutes < now.minutes;
+
+      return {
+        className: isDone ? "done" : "",
+        badge: isDone ? "Done" : "Today",
+        note: isDone ? "Completed" : "Scheduled"
+      };
+    }
+
+    function renderMobileScheduleState(message) {
+      mobileTimesList.textContent = "";
+      const state = document.createElement("div");
+      state.className = "mobile-schedule-state";
+      state.textContent = message;
+      mobileTimesList.appendChild(state);
+    }
+
+    function renderMobileRows(payload, upcoming, current) {
+      const timings = payload.data.timings;
+      const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
+      const hasCurrent = current && current.scheduleKey === scheduleKey;
+      mobileTimesList.textContent = "";
+
+      for (const prayer of PRAYERS) {
+        const timing = timings[prayer] || "-";
+        const status = getMobilePrayerStatus(prayer, timing, payload, upcoming, current, hasCurrent);
+        const card = document.createElement("article");
+        card.className = `mobile-prayer-card${status.className ? ` ${status.className}` : ""}`;
+
+        const icon = document.createElement("span");
+        icon.className = "mobile-prayer-icon";
+        icon.innerHTML = getPrayerIcon(prayer);
+
+        const main = document.createElement("div");
+        main.className = "mobile-prayer-main";
+
+        const title = document.createElement("div");
+        title.className = "mobile-prayer-title";
+        title.textContent = prayer;
+
+        const note = document.createElement("div");
+        note.className = "mobile-prayer-note";
+        note.textContent = status.note;
+
+        main.append(title, note);
+
+        const meta = document.createElement("div");
+        meta.className = "mobile-prayer-meta";
+
+        const time = document.createElement("div");
+        time.className = "mobile-prayer-time";
+        time.textContent = timing;
+
+        const badge = document.createElement("span");
+        badge.className = `badge${status.className === "upcoming" ? " upcoming" : status.className === "current" ? " current" : ""}`;
+        badge.textContent = status.badge;
+        meta.append(time, badge);
+
+        if (status.className === "current") {
+          const countdown = document.createElement("span");
+          countdown.className = "current-countdown";
+          countdown.dataset.currentCountdown = "";
+          countdown.hidden = true;
+          meta.appendChild(countdown);
+        }
+
+        card.append(icon, main, meta);
+        mobileTimesList.appendChild(card);
+      }
+    }
+
     function renderRows(payload, upcoming, current) {
       const timings = payload.data.timings;
       const scheduleKey = parseApiDate(payload.data.date.gregorian.date).key;
@@ -2218,6 +2494,7 @@
         timesBody.appendChild(row);
       }
 
+      renderMobileRows(payload, upcoming, current);
       startCurrentSalahCountdown(hasCurrent ? current : null);
     }
 
@@ -2246,6 +2523,7 @@
     function showLoadingState(label) {
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
+      renderMobileScheduleState("Loading salah times...");
       renderLocation(label);
       dateLine.textContent = "";
       timezoneLine.textContent = "Loading...";
@@ -2265,6 +2543,7 @@
     function showLoadError(error) {
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
+      renderMobileScheduleState("Unable to load salah times.");
       nextLine.textContent = "Please try another city or check your connection.";
       timezoneLine.textContent = "Unavailable";
       sunriseLine.textContent = "--:--";
