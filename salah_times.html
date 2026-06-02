@@ -1534,6 +1534,7 @@
           "Jodhpur, India",
           "Madurai, India",
           "Raipur, India",
+          "Raigarh, Chhattisgarh, India",
           "Kota, India",
           "Guwahati, India",
           "Chandigarh, India",
@@ -2641,6 +2642,69 @@
       }
     }
 
+    function getFallbackCountryFromInput(city) {
+      const parts = String(city || "").split(",").map((part) => part.trim()).filter(Boolean);
+      return parts.length > 1 ? parts[parts.length - 1] : "";
+    }
+
+    function formatManualCityDisplayName(place, fallbackCity) {
+      const address = place && place.address ? place.address : {};
+      const fallbackParts = String(fallbackCity || "").split(",").map((part) => part.trim()).filter(Boolean);
+      const city = address.city ||
+        address.town ||
+        address.village ||
+        address.hamlet ||
+        address.suburb ||
+        address.municipality ||
+        address.county ||
+        fallbackParts[0] ||
+        (place && place.name);
+      const state = address.state;
+      const country = address.country || getFallbackCountryFromInput(fallbackCity);
+      const parts = [];
+
+      if (city) {
+        parts.push(city);
+      }
+
+      if (state && normalizeLocationPart(state) !== normalizeLocationPart(city)) {
+        parts.push(state);
+      }
+
+      if (
+        country &&
+        normalizeCountry(country) !== normalizeCountry(parts[parts.length - 1])
+      ) {
+        parts.push(country);
+      }
+
+      return parts.length ? parts.join(", ") : fallbackCity;
+    }
+
+    async function resolveManualCityDisplayName(city) {
+      try {
+        const params = new URLSearchParams({
+          q: city,
+          format: "json",
+          limit: "1",
+          addressdetails: "1",
+          "accept-language": "en"
+        });
+        const response = await fetch(`${GEOCODE_URL}?${params}`, {
+          headers: { Accept: "application/json" }
+        });
+        if (!response.ok) {
+          return city;
+        }
+
+        const data = await response.json();
+        const place = Array.isArray(data) ? data[0] : null;
+        return place ? formatManualCityDisplayName(place, city) : city;
+      } catch (error) {
+        return city;
+      }
+    }
+
     function getPrayerIcon(prayer) {
       const icons = {
         Fajr: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 4.5a7.5 7.5 0 1 0 0 15 8 8 0 0 1 0-15Z"></path><path d="M7 5h.01"></path><path d="M4.5 9h.01"></path></svg>',
@@ -2954,17 +3018,19 @@
       return true;
     }
 
-    async function loadCity(city, keepCurrentView = false) {
+    async function loadCity(city, keepCurrentView = false, options = {}) {
       const requestDate = new Date();
+      const displayLabel = options.displayLabel || city;
       const cityQiblaCoords = await resolveCityCoordinates(city);
       lastQiblaCoords = cityQiblaCoords;
       const cachedSchedule = getCachedCitySchedule(city, requestDate);
       if (cachedSchedule) {
         const trustCachedQiblaCoords = cachedSchedule.qiblaCoordsSource === "city";
         await renderCachedCitySchedule(cachedSchedule, {
+          displayLabel,
           qiblaCoords: cityQiblaCoords,
           trustCachedQiblaCoords,
-          message: `Showing cached salah times for ${city} today.`
+          message: `Showing cached salah times for ${displayLabel} today.`
         });
         if (cityQiblaCoords) {
           saveDailyCitySchedule(city, requestDate, cachedSchedule.todayPayload, cachedSchedule.tomorrowPayload, cityQiblaCoords, "city");
@@ -2973,19 +3039,19 @@
       }
 
       if (keepCurrentView) {
-        messageLine.textContent = `Updating times for ${city}...`;
+        messageLine.textContent = `Updating times for ${displayLabel}...`;
         messageLine.classList.add("offline");
         messageLine.classList.remove("error");
       } else {
-        showLoadingState(city);
+        showLoadingState(displayLabel);
       }
 
       try {
         const todayPayload = await fetchTimings(city, requestDate);
-        const schedule = await renderSchedule(city, todayPayload, (date) => fetchTimings(city, date), {
+        const schedule = await renderSchedule(displayLabel, todayPayload, (date) => fetchTimings(city, date), {
           qiblaCoords: cityQiblaCoords
         });
-        saveLastSchedule(city, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
+        saveLastSchedule(displayLabel, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
         saveDailyCitySchedule(city, requestDate, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
       } catch (error) {
         if (!(await showCachedSchedule())) {
@@ -3087,9 +3153,9 @@
       );
     }
 
-    function loadCustomCity() {
-      const city = customCityInput.value.trim();
-      if (!city) {
+    async function loadCustomCity() {
+      const userCity = customCityInput.value.trim();
+      if (!userCity) {
         customCityToggle.checked = true;
         customCity.classList.add("open");
         customCityInput.focus();
@@ -3098,7 +3164,8 @@
 
       setCitySelectPlaceholder("Select city");
       citySelect.value = "";
-      loadCity(city);
+      const displayLabel = await resolveManualCityDisplayName(userCity);
+      loadCity(userCity, false, { displayLabel });
     }
 
     function init() {
