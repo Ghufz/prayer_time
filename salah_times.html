@@ -1326,13 +1326,6 @@
             </div>
           </div>
           <div class="controls">
-            <label for="location-display-select">Detected location</label>
-            <select id="location-display-select" aria-label="Detected location display">
-              <option value="state">City, State, Country</option>
-              <option value="compact">City, Country</option>
-            </select>
-          </div>
-          <div class="controls">
             <label for="school-select">Asr method</label>
             <select id="school-select" aria-label="Asr method">
               <option value="0">Shafi / Maliki / Hanbali</option>
@@ -1576,14 +1569,12 @@
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
-    const LOCATION_DISPLAY_STORAGE_KEY = "salah-times:location-display";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
     const schoolSelect = document.querySelector("#school-select");
     const displayModeSelect = document.querySelector("#display-mode-select");
-    const locationDisplaySelect = document.querySelector("#location-display-select");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
     const actionsPanel = document.querySelector(".actions");
@@ -1663,35 +1654,6 @@
       } catch (error) {
         // Display mode can still work for the current session if storage is unavailable.
       }
-    }
-
-    function getSavedLocationDisplayMode() {
-      try {
-        return localStorage.getItem(LOCATION_DISPLAY_STORAGE_KEY) === "compact" ? "compact" : "state";
-      } catch (error) {
-        return "state";
-      }
-    }
-
-    function applyLocationDisplayMode(mode, shouldSave = true) {
-      const locationDisplayMode = mode === "compact" ? "compact" : "state";
-      if (locationDisplaySelect) {
-        locationDisplaySelect.value = locationDisplayMode;
-      }
-
-      if (!shouldSave) {
-        return;
-      }
-
-      try {
-        localStorage.setItem(LOCATION_DISPLAY_STORAGE_KEY, locationDisplayMode);
-      } catch (error) {
-        // Location display choice is optional and should not block the app.
-      }
-    }
-
-    function shouldShowDetectedState() {
-      return locationDisplaySelect ? locationDisplaySelect.value !== "compact" : getSavedLocationDisplayMode() !== "compact";
     }
 
     function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
@@ -2516,7 +2478,7 @@
 
     function formatDetectedLocationName(data) {
       const city = data.city || data.locality || data.principalSubdivision;
-      const state = data.principalSubdivision;
+      const locality = data.locality;
       const country = data.countryName;
       const parts = [];
 
@@ -2525,11 +2487,10 @@
       }
 
       if (
-        shouldShowDetectedState() &&
-        state &&
-        normalizeLocationPart(state) !== normalizeLocationPart(city)
+        locality &&
+        normalizeLocationPart(locality) !== normalizeLocationPart(city)
       ) {
-        parts.push(state);
+        parts.push(locality);
       }
 
       if (
@@ -3060,7 +3021,6 @@
     function init() {
       setCitySelectPlaceholder("Select city");
       applyDisplayMode(getSavedDisplayMode(), false);
-      applyLocationDisplayMode(getSavedLocationDisplayMode(), false);
 
       for (const group of CITY_GROUPS) {
         const optionGroup = document.createElement("optgroup");
@@ -3091,9 +3051,6 @@
       });
       displayModeSelect.addEventListener("change", () => {
         applyDisplayMode(displayModeSelect.value);
-      });
-      locationDisplaySelect.addEventListener("change", () => {
-        applyLocationDisplayMode(locationDisplaySelect.value);
       });
       customCityToggle.addEventListener("change", () => {
         customCity.classList.toggle("open", customCityToggle.checked);
