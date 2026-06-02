@@ -89,6 +89,10 @@
       min-width: 0;
     }
 
+    .brand-lockup h1 {
+      min-width: 0;
+    }
+
     .app-mark {
       display: inline-grid;
       place-items: center;
@@ -109,6 +113,7 @@
 
     .title-copy {
       display: grid;
+      align-content: center;
       gap: 4px;
       min-width: 0;
     }
@@ -1067,6 +1072,7 @@
 
       .title-row {
         align-items: center;
+        gap: 12px;
       }
 
       .app-mark,
@@ -1087,7 +1093,7 @@
       }
 
       h1 {
-        font-size: 1.9rem;
+        font-size: 1.74rem;
       }
 
       .subtitle {
@@ -1260,6 +1266,14 @@
       .custom-row button span {
         display: none;
       }
+
+      h1 {
+        font-size: 1.58rem;
+      }
+
+      .brand-lockup {
+        gap: 10px;
+      }
     }
   </style>
 </head>
@@ -1295,20 +1309,6 @@
             <label for="city-select">Select city</label>
             <select id="city-select" aria-label="Select city" autocomplete="off"></select>
           </div>
-          <div class="controls">
-            <label for="school-select">Asr method</label>
-            <select id="school-select" aria-label="Asr method">
-              <option value="0">Shafi / Maliki / Hanbali</option>
-              <option value="1">Hanafi</option>
-            </select>
-          </div>
-          <div class="controls">
-            <label for="display-mode-select">Display mode</label>
-            <select id="display-mode-select" aria-label="Display mode">
-              <option value="classic">Classic</option>
-              <option value="sunlight">Sunlight</option>
-            </select>
-          </div>
           <div class="custom-city">
             <label class="custom-toggle" for="custom-city-toggle">
               <input id="custom-city-toggle" type="checkbox">
@@ -1324,6 +1324,27 @@
                 <span>Search</span>
               </button>
             </div>
+          </div>
+          <div class="controls">
+            <label for="location-display-select">Detected location</label>
+            <select id="location-display-select" aria-label="Detected location display">
+              <option value="state">City, State, Country</option>
+              <option value="compact">City, Country</option>
+            </select>
+          </div>
+          <div class="controls">
+            <label for="school-select">Asr method</label>
+            <select id="school-select" aria-label="Asr method">
+              <option value="0">Shafi / Maliki / Hanbali</option>
+              <option value="1">Hanafi</option>
+            </select>
+          </div>
+          <div class="controls">
+            <label for="display-mode-select">Display mode</label>
+            <select id="display-mode-select" aria-label="Display mode">
+              <option value="classic">Classic</option>
+              <option value="sunlight">Sunlight</option>
+            </select>
           </div>
           <div class="settings-row">
             <span class="settings-label">Timezone</span>
@@ -1555,12 +1576,14 @@
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
+    const LOCATION_DISPLAY_STORAGE_KEY = "salah-times:location-display";
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
     const schoolSelect = document.querySelector("#school-select");
     const displayModeSelect = document.querySelector("#display-mode-select");
+    const locationDisplaySelect = document.querySelector("#location-display-select");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
     const actionsPanel = document.querySelector(".actions");
@@ -1640,6 +1663,35 @@
       } catch (error) {
         // Display mode can still work for the current session if storage is unavailable.
       }
+    }
+
+    function getSavedLocationDisplayMode() {
+      try {
+        return localStorage.getItem(LOCATION_DISPLAY_STORAGE_KEY) === "compact" ? "compact" : "state";
+      } catch (error) {
+        return "state";
+      }
+    }
+
+    function applyLocationDisplayMode(mode, shouldSave = true) {
+      const locationDisplayMode = mode === "compact" ? "compact" : "state";
+      if (locationDisplaySelect) {
+        locationDisplaySelect.value = locationDisplayMode;
+      }
+
+      if (!shouldSave) {
+        return;
+      }
+
+      try {
+        localStorage.setItem(LOCATION_DISPLAY_STORAGE_KEY, locationDisplayMode);
+      } catch (error) {
+        // Location display choice is optional and should not block the app.
+      }
+    }
+
+    function shouldShowDetectedState() {
+      return locationDisplaySelect ? locationDisplaySelect.value !== "compact" : getSavedLocationDisplayMode() !== "compact";
     }
 
     function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
@@ -1851,9 +1903,11 @@
 
     function splitLocationName(value) {
       const parts = String(value || "").split(",").map((part) => part.trim()).filter(Boolean);
+      const countryPart = parts.length > 1 ? parts[parts.length - 1] : "";
       return {
         city: normalizeLocationPart(parts[0]),
-        country: normalizeCountry(parts.slice(1).join(","))
+        state: parts.length > 2 ? normalizeLocationPart(parts.slice(1, -1).join(",")) : "",
+        country: normalizeCountry(countryPart)
       };
     }
 
@@ -2460,6 +2514,34 @@
       return payload;
     }
 
+    function formatDetectedLocationName(data) {
+      const city = data.city || data.locality || data.principalSubdivision;
+      const state = data.principalSubdivision;
+      const country = data.countryName;
+      const parts = [];
+
+      if (city) {
+        parts.push(city);
+      }
+
+      if (
+        shouldShowDetectedState() &&
+        state &&
+        normalizeLocationPart(state) !== normalizeLocationPart(city)
+      ) {
+        parts.push(state);
+      }
+
+      if (
+        country &&
+        normalizeCountry(country) !== normalizeCountry(parts[parts.length - 1])
+      ) {
+        parts.push(country);
+      }
+
+      return parts.length ? parts.join(", ") : null;
+    }
+
     async function resolveLocationName(coords) {
       try {
         const params = new URLSearchParams({
@@ -2473,12 +2555,7 @@
         }
 
         const data = await response.json();
-        const city = data.city || data.locality || data.principalSubdivision;
-        const country = data.countryName;
-        if (city && country) {
-          return `${city}, ${country}`;
-        }
-        return city || country || null;
+        return formatDetectedLocationName(data);
       } catch (error) {
         return null;
       }
@@ -2788,12 +2865,13 @@
         (canUseCachedQiblaCoords ? getValidCoords(cache.qiblaCoords) : null) ||
         lastQiblaCoords;
       lastQiblaCoords = qiblaCoords || lastQiblaCoords;
+      const displayLabel = options.displayLabel || selectedCity;
       const savedAt = formatCachedAt(cache.savedAt);
       const savedText = savedAt ? ` Saved ${savedAt}.` : "";
-      const message = options.message || `Showing cached salah times for ${selectedCity} today.${savedText}`;
+      const message = options.message || `Showing cached salah times for ${displayLabel} today.${savedText}`;
 
       await renderSchedule(
-        selectedCity,
+        displayLabel,
         cache.todayPayload,
         cache.tomorrowPayload ? async () => cache.tomorrowPayload : null,
         {
@@ -2803,7 +2881,7 @@
           message
         }
       );
-      saveLastSchedule(selectedCity, cache.todayPayload, cache.tomorrowPayload, qiblaCoords);
+      saveLastSchedule(displayLabel, cache.todayPayload, cache.tomorrowPayload, qiblaCoords);
       return true;
     }
 
@@ -2898,21 +2976,22 @@
         const cachedSchedule = getCachedCitySchedule(selectedCity, requestDate);
         if (cachedSchedule) {
           await renderCachedCitySchedule(cachedSchedule, {
+            displayLabel: locationName,
             qiblaCoords: lastQiblaCoords,
             trustCachedQiblaCoords: false,
-            message: `Showing cached salah times for ${selectedCity} today while using your current Qibla direction.`
+            message: `Showing cached salah times for ${locationName} today while using your current Qibla direction.`
           });
           saveDailyCitySchedule(selectedCity, requestDate, cachedSchedule.todayPayload, cachedSchedule.tomorrowPayload, lastQiblaCoords, "device");
           return;
         }
 
         const todayPayload = await fetchTimingsByCoordinates(coords, requestDate);
-        const schedule = await renderSchedule(selectedCity, todayPayload, (date) =>
+        const schedule = await renderSchedule(locationName, todayPayload, (date) =>
           fetchTimingsByCoordinates(coords, date), {
             qiblaCoords: lastQiblaCoords
           }
         );
-        saveLastSchedule(selectedCity, todayPayload, schedule.tomorrowPayload, lastQiblaCoords, "device");
+        saveLastSchedule(locationName, todayPayload, schedule.tomorrowPayload, lastQiblaCoords, "device");
         saveDailyCitySchedule(selectedCity, requestDate, todayPayload, schedule.tomorrowPayload, lastQiblaCoords, "device");
       } catch (error) {
         await loadCity(DEFAULT_CITY, keepCurrentView);
@@ -2981,6 +3060,7 @@
     function init() {
       setCitySelectPlaceholder("Select city");
       applyDisplayMode(getSavedDisplayMode(), false);
+      applyLocationDisplayMode(getSavedLocationDisplayMode(), false);
 
       for (const group of CITY_GROUPS) {
         const optionGroup = document.createElement("optgroup");
@@ -3011,6 +3091,9 @@
       });
       displayModeSelect.addEventListener("change", () => {
         applyDisplayMode(displayModeSelect.value);
+      });
+      locationDisplaySelect.addEventListener("change", () => {
+        applyLocationDisplayMode(locationDisplaySelect.value);
       });
       customCityToggle.addEventListener("change", () => {
         customCity.classList.toggle("open", customCityToggle.checked);
