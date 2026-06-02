@@ -433,20 +433,35 @@
     }
 
     .sun-panel-title {
-      display: grid;
-      gap: 3px;
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      min-width: 0;
     }
 
     .sun-panel-title strong {
+      flex: 0 0 auto;
       color: var(--warn);
       font-size: 0.82rem;
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
+    .sun-panel-title strong::after {
+      content: "·";
+      margin-left: 7px;
+      color: rgba(138, 91, 24, 0.48);
+    }
+
     .sun-panel-title span {
+      min-width: 0;
       color: var(--muted);
-      font-size: 0.93rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      line-height: 1.15;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .sun-times {
@@ -1152,6 +1167,10 @@
         flex-direction: column;
       }
 
+      .sun-panel-title span {
+        font-size: 0.76rem;
+      }
+
       .qibla-panel {
         grid-template-columns: 1fr;
       }
@@ -1258,6 +1277,14 @@
         height: 18px;
       }
 
+      .sun-panel-title {
+        gap: 5px;
+      }
+
+      .sun-panel-title strong::after {
+        margin-left: 5px;
+      }
+
       .custom-row button {
         min-width: 48px;
         padding-inline: 12px;
@@ -1358,7 +1385,7 @@
       <div class="sun-panel-header">
         <div class="sun-panel-title">
           <strong>Sun Path</strong>
-          <span id="sun-progress-line">Loading sunrise and sunset...</span>
+          <span id="sun-progress-line">Loading...</span>
         </div>
         <div class="sun-times">
           <div class="sun-chip sunrise">
@@ -1569,6 +1596,23 @@
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
+    const DETECTED_MAJOR_CITY_RULES = [
+      {
+        city: "Bengaluru",
+        country: "india",
+        bounds: { minLat: 12.65, maxLat: 13.25, minLon: 77.35, maxLon: 78.05 },
+        localities: [
+          "anekal",
+          "attibele",
+          "bommasandra",
+          "chandapura",
+          "electronic city",
+          "jigani",
+          "sarjapura",
+          "whitefield"
+        ]
+      }
+    ];
 
     const customCity = document.querySelector(".custom-city");
     const customCityToggle = document.querySelector("#custom-city-toggle");
@@ -1875,7 +1919,8 @@
 
     function findMatchingCity(cityName) {
       const detected = splitLocationName(cityName);
-      if (!detected.city) {
+      const detectedCities = [detected.city, detected.state].filter(Boolean);
+      if (!detectedCities.length) {
         return "";
       }
 
@@ -1883,17 +1928,19 @@
         bangalore: "Bengaluru, India",
         "new delhi": "Delhi, India"
       };
-      if (aliases[detected.city]) {
-        return aliases[detected.city];
+      for (const detectedCity of detectedCities) {
+        if (aliases[detectedCity]) {
+          return aliases[detectedCity];
+        }
       }
 
       return CITIES.find((city) => {
         const known = splitLocationName(city);
         const sameCountry = !detected.country || !known.country || detected.country === known.country;
-        return sameCountry && (
-          detected.city === known.city ||
-          detected.city.includes(known.city) ||
-          known.city.includes(detected.city)
+        return sameCountry && detectedCities.some((detectedCity) =>
+          detectedCity === known.city ||
+          detectedCity.includes(known.city) ||
+          known.city.includes(detectedCity)
         );
       }) || "";
     }
@@ -2025,14 +2072,14 @@
 
     function formatSunStatus(progress, sunrise, sunset, now) {
       if (now.minutes < sunrise.minutes) {
-        return `Sunrise begins at ${sunrise.displayTime}.`;
+        return `Sunrise ${sunrise.displayTime}`;
       }
 
       if (now.minutes > sunset.minutes) {
-        return `Sunset completed at ${sunset.displayTime}.`;
+        return `Sunset ${sunset.displayTime}`;
       }
 
-      return `${Math.round(progress * 100)}% of daylight elapsed.`;
+      return `${Math.round(progress * 100)}% daylight elapsed`;
     }
 
     function formatDayNote(scheduleKey, nowKey) {
@@ -2218,7 +2265,7 @@
       sunsetLine.textContent = sunsetDisplay;
 
       if (!sunrise || !sunset || sunset.minutes <= sunrise.minutes) {
-        sunProgressLine.textContent = "Sunrise or sunset is unavailable for this location.";
+        sunProgressLine.textContent = "Sun unavailable";
         setSunMarker(0);
         return;
       }
@@ -2234,10 +2281,10 @@
 
       if (dayDiff < 0) {
         progress = 1;
-        sunProgressLine.textContent = `Sunset completed at ${sunsetDisplay}.`;
+        sunProgressLine.textContent = `Sunset ${sunsetDisplay}`;
       } else if (dayDiff > 0) {
         progress = 0;
-        sunProgressLine.textContent = `Sunrise begins at ${sunriseDisplay}.`;
+        sunProgressLine.textContent = `Sunrise ${sunriseDisplay}`;
       } else {
         progress = clamp((now.minutes - sunrise.minutes) / (sunset.minutes - sunrise.minutes), 0, 1);
         sunProgressLine.textContent = formatSunStatus(progress, sunrise, sunset, now);
@@ -2476,21 +2523,57 @@
       return payload;
     }
 
-    function formatDetectedLocationName(data) {
-      const city = data.city || data.locality || data.principalSubdivision;
-      const locality = data.locality;
+    function isWithinBounds(coords, bounds) {
+      const validCoords = getValidCoords(coords);
+      if (!validCoords || !bounds) {
+        return false;
+      }
+
+      return validCoords.latitude >= bounds.minLat &&
+        validCoords.latitude <= bounds.maxLat &&
+        validCoords.longitude >= bounds.minLon &&
+        validCoords.longitude <= bounds.maxLon;
+    }
+
+    function getDetectedMajorCity(data, coords) {
+      const country = normalizeCountry(data.countryName);
+      const city = normalizeLocationPart(data.city);
+      const locality = normalizeLocationPart(data.locality);
+
+      for (const rule of DETECTED_MAJOR_CITY_RULES) {
+        if (country !== rule.country) {
+          continue;
+        }
+
+        const localityMatches = rule.localities.some((knownLocality) =>
+          locality === knownLocality ||
+          city === knownLocality
+        );
+        if (localityMatches || isWithinBounds(coords, rule.bounds)) {
+          return rule.city;
+        }
+      }
+
+      return "";
+    }
+
+    function formatDetectedLocationName(data, coords = null) {
+      const majorCity = getDetectedMajorCity(data, coords) || data.city || data.principalSubdivision || data.locality;
+      const locality = data.locality || (
+        normalizeLocationPart(data.city) !== normalizeLocationPart(majorCity) ? data.city : ""
+      );
       const country = data.countryName;
       const parts = [];
 
-      if (city) {
-        parts.push(city);
-      }
-
       if (
         locality &&
-        normalizeLocationPart(locality) !== normalizeLocationPart(city)
+        normalizeLocationPart(locality) !== normalizeLocationPart(majorCity)
       ) {
         parts.push(locality);
+      }
+
+      if (majorCity) {
+        parts.push(majorCity);
       }
 
       if (
@@ -2516,7 +2599,7 @@
         }
 
         const data = await response.json();
-        return formatDetectedLocationName(data);
+        return formatDetectedLocationName(data, coords);
       } catch (error) {
         return null;
       }
@@ -2760,7 +2843,7 @@
       timezoneLine.textContent = "Loading...";
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
-      sunProgressLine.textContent = "Loading sunrise and sunset...";
+      sunProgressLine.textContent = "Loading...";
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
       qiblaArrow.style.transform = "rotate(0deg)";
@@ -2779,7 +2862,7 @@
       timezoneLine.textContent = "Unavailable";
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
-      sunProgressLine.textContent = "Sunrise and sunset are unavailable.";
+      sunProgressLine.textContent = "Sun unavailable";
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
       qiblaArrow.style.transform = "rotate(0deg)";
