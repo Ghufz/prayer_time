@@ -361,6 +361,8 @@
     #location-line {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       align-self: stretch;
       min-width: min(310px, 100%);
       border: 1px solid rgba(11, 111, 99, 0.15);
@@ -373,6 +375,38 @@
 
     .status-bar strong {
       color: var(--accent-deep);
+    }
+
+    .location-name {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .favorite-city-button {
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
+      border: 1px solid rgba(11, 111, 99, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow: none;
+      color: var(--muted);
+      padding: 0;
+    }
+
+    .favorite-city-button.active {
+      border-color: rgba(199, 150, 50, 0.34);
+      background: #fff7de;
+      color: var(--gold);
+    }
+
+    .favorite-city-button .icon {
+      width: 19px;
+      height: 19px;
+    }
+
+    .favorite-city-button.active .icon {
+      fill: currentColor;
     }
 
     .date-line {
@@ -1612,6 +1646,8 @@
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
+    const FAVORITE_CITIES_STORAGE_KEY = "salah-times:favorite-cities";
+    const FAVORITE_CITY_LIMIT = 5;
     const DETECTED_MAJOR_CITY_RULES = [
       {
         city: "Bengaluru",
@@ -1663,6 +1699,7 @@
     let sunAnimationFrame = null;
     let currentSalahCountdownTimer = null;
     let lastQiblaCoords = null;
+    let currentCityContext = null;
 
     function setCitySelectPlaceholder(label) {
       let option = citySelect.querySelector("[data-city-placeholder='true']");
@@ -1714,6 +1751,150 @@
       } catch (error) {
         // Display mode can still work for the current session if storage is unavailable.
       }
+    }
+
+    function normalizeFavoriteCityKey(value) {
+      return normalizeCacheCityKey(value);
+    }
+
+    function normalizeFavoriteCity(entry) {
+      if (typeof entry === "string") {
+        const value = entry.trim();
+        return value ? { label: value, value } : null;
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const value = String(entry.value || entry.label || "").trim();
+      const label = String(entry.label || value).trim();
+      return value ? { label, value } : null;
+    }
+
+    function getFavoriteCities() {
+      try {
+        const rawFavorites = localStorage.getItem(FAVORITE_CITIES_STORAGE_KEY);
+        if (!rawFavorites) {
+          return [];
+        }
+
+        const parsed = JSON.parse(rawFavorites);
+        if (!Array.isArray(parsed)) {
+          return [];
+        }
+
+        const seen = new Set();
+        const favorites = [];
+        for (const item of parsed) {
+          const favorite = normalizeFavoriteCity(item);
+          if (!favorite) {
+            continue;
+          }
+
+          const key = normalizeFavoriteCityKey(favorite.value);
+          if (!key || seen.has(key)) {
+            continue;
+          }
+
+          seen.add(key);
+          favorites.push(favorite);
+          if (favorites.length >= FAVORITE_CITY_LIMIT) {
+            break;
+          }
+        }
+
+        return favorites;
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveFavoriteCities(favorites) {
+      try {
+        localStorage.setItem(FAVORITE_CITIES_STORAGE_KEY, JSON.stringify(favorites.slice(0, FAVORITE_CITY_LIMIT)));
+      } catch (error) {
+        // Favorites are optional; the app can still work without storage.
+      }
+    }
+
+    function renderFavoriteCityOptions() {
+      let optionGroup = citySelect.querySelector("[data-favorite-cities='true']");
+      const favorites = getFavoriteCities();
+      if (!favorites.length) {
+        if (optionGroup) {
+          optionGroup.remove();
+        }
+        return;
+      }
+
+      if (!optionGroup) {
+        optionGroup = document.createElement("optgroup");
+        optionGroup.label = "Favorite cities";
+        optionGroup.dataset.favoriteCities = "true";
+        const placeholder = citySelect.querySelector("[data-city-placeholder='true']");
+        citySelect.insertBefore(optionGroup, placeholder ? placeholder.nextSibling : citySelect.firstChild);
+      }
+
+      optionGroup.textContent = "";
+      for (const favorite of favorites) {
+        const option = document.createElement("option");
+        option.value = favorite.value;
+        option.textContent = favorite.label;
+        option.dataset.favoriteLabel = favorite.label;
+        optionGroup.appendChild(option);
+      }
+    }
+
+    function isFavoriteCity(value) {
+      const key = normalizeFavoriteCityKey(value);
+      return Boolean(key) && getFavoriteCities().some((favorite) => normalizeFavoriteCityKey(favorite.value) === key);
+    }
+
+    function updateFavoriteButton() {
+      const favoriteButton = document.querySelector("#favorite-city-button");
+      if (!favoriteButton) {
+        return;
+      }
+
+      const canSave = Boolean(currentCityContext && currentCityContext.value);
+      const isFavorite = canSave && isFavoriteCity(currentCityContext.value);
+      favoriteButton.disabled = !canSave;
+      favoriteButton.classList.toggle("active", isFavorite);
+      favoriteButton.setAttribute("aria-pressed", String(isFavorite));
+      favoriteButton.setAttribute("aria-label", isFavorite ? "Remove favorite city" : "Save favorite city");
+      favoriteButton.title = isFavorite ? "Remove favorite city" : "Save favorite city";
+    }
+
+    function setCurrentCityContext(label, value) {
+      currentCityContext = value ? { label: label || value, value } : null;
+      updateFavoriteButton();
+    }
+
+    function toggleFavoriteCity() {
+      if (!currentCityContext || !currentCityContext.value) {
+        return;
+      }
+
+      const key = normalizeFavoriteCityKey(currentCityContext.value);
+      const favorites = getFavoriteCities();
+      const existingIndex = favorites.findIndex((favorite) => normalizeFavoriteCityKey(favorite.value) === key);
+
+      if (existingIndex >= 0) {
+        favorites.splice(existingIndex, 1);
+      } else {
+        favorites.unshift({
+          label: currentCityContext.label,
+          value: currentCityContext.value
+        });
+      }
+
+      saveFavoriteCities(favorites);
+      renderFavoriteCityOptions();
+      if (Array.from(citySelect.options).some((option) => option.value === currentCityContext.value)) {
+        citySelect.value = currentCityContext.value;
+      }
+      updateFavoriteButton();
     }
 
     function saveLastSchedule(label, todayPayload, tomorrowPayload = null, qiblaCoords = null, qiblaCoordsSource = "", school = getSelectedSchool()) {
@@ -1980,7 +2161,8 @@
           optionGroup.label = AUTO_CITY_GROUP_LABEL;
           optionGroup.dataset.autoLocation = "true";
           const placeholder = citySelect.querySelector("[data-city-placeholder='true']");
-          citySelect.insertBefore(optionGroup, placeholder ? placeholder.nextSibling : citySelect.firstChild);
+          const favoriteGroup = citySelect.querySelector("[data-favorite-cities='true']");
+          citySelect.insertBefore(optionGroup, favoriteGroup ? favoriteGroup.nextSibling : placeholder ? placeholder.nextSibling : citySelect.firstChild);
         }
 
         let option = optionGroup.querySelector("option");
@@ -2205,8 +2387,22 @@
     function renderLocation(city) {
       locationLine.textContent = "";
       const locationName = document.createElement("strong");
+      locationName.className = "location-name";
       locationName.textContent = city;
-      locationLine.appendChild(locationName);
+
+      const favoriteButton = document.createElement("button");
+      favoriteButton.id = "favorite-city-button";
+      favoriteButton.className = "favorite-city-button";
+      favoriteButton.type = "button";
+      favoriteButton.innerHTML = `
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 2.8 14.9 8.8 21.6 9.8 16.8 14.5 17.9 21.2 12 18.1 6.1 21.2 7.2 14.5 2.4 9.8 9.1 8.8 12 2.8Z"></path>
+        </svg>
+      `;
+      favoriteButton.addEventListener("click", toggleFavoriteCity);
+
+      locationLine.append(locationName, favoriteButton);
+      updateFavoriteButton();
     }
 
     function renderDateChip(label, value, variant) {
@@ -2914,6 +3110,7 @@
     }
 
     function showLoadingState(label) {
+      setCurrentCityContext("", "");
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
       renderMobileScheduleState("Loading salah times...");
@@ -2934,6 +3131,7 @@
     }
 
     function showLoadError(error) {
+      setCurrentCityContext("", "");
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
       renderMobileScheduleState("Unable to load salah times.");
@@ -2952,6 +3150,7 @@
     }
 
     async function renderSchedule(label, todayPayload, fetchTomorrowPayload, options = {}) {
+      setCurrentCityContext(label, options.favoriteValue || label);
       let upcoming = findUpcoming(todayPayload);
       const current = findCurrentSalah(todayPayload);
       let tomorrowPayload = null;
@@ -3000,6 +3199,7 @@
         {
           allowTomorrowFailure: true,
           offline: true,
+          favoriteValue: options.favoriteValue || selectedCity,
           qiblaCoords,
           message
         }
@@ -3026,6 +3226,7 @@
         {
           allowTomorrowFailure: true,
           offline: options.offline !== false,
+          favoriteValue: selectedCity,
           qiblaCoords: cache.qiblaCoords || lastQiblaCoords,
           message
         }
@@ -3043,6 +3244,7 @@
         const trustCachedQiblaCoords = cachedSchedule.qiblaCoordsSource === "city";
         await renderCachedCitySchedule(cachedSchedule, {
           displayLabel,
+          favoriteValue: city,
           qiblaCoords: cityQiblaCoords,
           trustCachedQiblaCoords,
           message: `Showing cached salah times for ${displayLabel} today.`
@@ -3064,6 +3266,7 @@
       try {
         const todayPayload = await fetchTimings(city, requestDate);
         const schedule = await renderSchedule(displayLabel, todayPayload, (date) => fetchTimings(city, date), {
+          favoriteValue: city,
           qiblaCoords: cityQiblaCoords
         });
         saveLastSchedule(displayLabel, todayPayload, schedule.tomorrowPayload, cityQiblaCoords, cityQiblaCoords ? "city" : "");
@@ -3102,6 +3305,7 @@
         if (cachedSchedule) {
           await renderCachedCitySchedule(cachedSchedule, {
             displayLabel: locationName,
+            favoriteValue: selectedCity,
             qiblaCoords: lastQiblaCoords,
             trustCachedQiblaCoords: false,
             message: `Showing cached salah times for ${locationName} today while using your current Qibla direction.`
@@ -3113,6 +3317,7 @@
         const todayPayload = await fetchTimingsByCoordinates(coords, requestDate);
         const schedule = await renderSchedule(locationName, todayPayload, (date) =>
           fetchTimingsByCoordinates(coords, date), {
+            favoriteValue: selectedCity,
             qiblaCoords: lastQiblaCoords
           }
         );
@@ -3183,9 +3388,26 @@
       loadCity(userCity, false, { displayLabel });
     }
 
+    function getSelectedCityLoadConfig(allowCurrentCityFallback = false) {
+      const selectedOption = citySelect.selectedOptions[0];
+      const city = citySelect.value ||
+        (allowCurrentCityFallback && currentCityContext && currentCityContext.value) ||
+        DEFAULT_CITY;
+      const currentContextMatches = currentCityContext &&
+        normalizeFavoriteCityKey(currentCityContext.value) === normalizeFavoriteCityKey(city);
+      const displayLabel = (selectedOption && selectedOption.dataset.favoriteLabel) ||
+        (allowCurrentCityFallback && currentContextMatches ? currentCityContext.label : "");
+
+      return {
+        city,
+        options: displayLabel ? { displayLabel } : {}
+      };
+    }
+
     function init() {
       setCitySelectPlaceholder("Select city");
       applyDisplayMode(getSavedDisplayMode(), false);
+      renderFavoriteCityOptions();
 
       for (const group of CITY_GROUPS) {
         const optionGroup = document.createElement("optgroup");
@@ -3208,11 +3430,12 @@
         customCityToggle.checked = false;
         customCity.classList.remove("open");
         customCityInput.value = "";
-        loadCity(citySelect.value);
+        const { city, options } = getSelectedCityLoadConfig();
+        loadCity(city, false, options);
       });
       schoolSelect.addEventListener("change", () => {
-        const city = citySelect.value || DEFAULT_CITY;
-        loadCity(city);
+        const { city, options } = getSelectedCityLoadConfig(true);
+        loadCity(city, false, options);
       });
       displayModeSelect.addEventListener("change", () => {
         applyDisplayMode(displayModeSelect.value);
