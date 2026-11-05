@@ -155,6 +155,10 @@
       gap: 8px;
     }
 
+    #geoapify-key-row[hidden] {
+      display: none;
+    }
+
     label {
       color: var(--muted);
       font-size: 0.8rem;
@@ -341,6 +345,12 @@
       font-size: 0.94rem;
       font-weight: 650;
       line-height: 1.35;
+    }
+
+    .settings-hint {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.4;
     }
 
     button:disabled {
@@ -1415,6 +1425,22 @@
               <option value="sunlight">Sunlight</option>
             </select>
           </div>
+          <div class="controls">
+            <label for="reverse-geocoder-select">Location name provider</label>
+            <select id="reverse-geocoder-select" aria-label="Location name provider">
+              <option value="bigdatacloud">BigDataCloud</option>
+              <option value="geoapify">Geoapify</option>
+            </select>
+          </div>
+          <div class="controls" id="geoapify-key-row" hidden>
+            <label for="geoapify-api-key">Geoapify API key</label>
+            <input id="geoapify-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your Geoapify key">
+            <span class="settings-hint">Saved in this browser. Restrict the key to your site in Geoapify settings.</span>
+            <a class="settings-hint" href="https://myprojects.geoapify.com/" target="_blank" rel="noopener noreferrer">Get a free Geoapify API key</a>
+          </div>
+          <div class="controls">
+            <button id="save-geocoding-settings" type="button">Save and refresh location</button>
+          </div>
           <div class="settings-row">
             <span class="settings-label">Timezone</span>
             <span class="settings-value" id="timezone-line">Loading...</span>
@@ -1536,6 +1562,7 @@
     const API_COORDS_URL = "https://api.aladhan.com/v1/timings";
     const GEOCODE_URL = "https://nominatim.openstreetmap.org/search";
     const REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
+    const GEOAPIFY_REVERSE_GEOCODE_URL = "https://api.geoapify.com/v1/geocode/reverse";
     const KAABA_COORDS = { latitude: 21.422487, longitude: 39.826206 };
     const PRAYERS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
     const CITY_GROUPS = [
@@ -1646,6 +1673,8 @@
     const CITY_COORDS_CACHE_KEY = "salah-times:city-coords-cache";
     const CITY_COORDS_CACHE_LIMIT = 20;
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
+    const REVERSE_GEOCODER_STORAGE_KEY = "salah-times:reverse-geocoder";
+    const GEOAPIFY_API_KEY_STORAGE_KEY = "salah-times:geoapify-api-key";
     const FAVORITE_CITIES_STORAGE_KEY = "salah-times:favorite-cities";
     const FAVORITE_CITY_LIMIT = 5;
     const DETECTED_MAJOR_CITY_RULES = [
@@ -1671,6 +1700,10 @@
     const citySelect = document.querySelector("#city-select");
     const schoolSelect = document.querySelector("#school-select");
     const displayModeSelect = document.querySelector("#display-mode-select");
+    const reverseGeocoderSelect = document.querySelector("#reverse-geocoder-select");
+    const geoapifyKeyRow = document.querySelector("#geoapify-key-row");
+    const geoapifyApiKeyInput = document.querySelector("#geoapify-api-key");
+    const saveGeocodingSettingsButton = document.querySelector("#save-geocoding-settings");
     const customCityInput = document.querySelector("#custom-city-input");
     const customCityButton = document.querySelector("#custom-city-button");
     const actionsPanel = document.querySelector(".actions");
@@ -1733,6 +1766,56 @@
       } catch (error) {
         return "classic";
       }
+    }
+
+    function getSavedReverseGeocoder() {
+      try {
+        return localStorage.getItem(REVERSE_GEOCODER_STORAGE_KEY) === "geoapify" ? "geoapify" : "bigdatacloud";
+      } catch (error) {
+        return "bigdatacloud";
+      }
+    }
+
+    function updateReverseGeocoderSettingsUI() {
+      if (!reverseGeocoderSelect || !geoapifyKeyRow) {
+        return;
+      }
+
+      const useGeoapify = reverseGeocoderSelect.value === "geoapify";
+      geoapifyKeyRow.hidden = !useGeoapify;
+      if (useGeoapify && geoapifyApiKeyInput && !geoapifyApiKeyInput.value) {
+        try {
+          geoapifyApiKeyInput.value = localStorage.getItem(GEOAPIFY_API_KEY_STORAGE_KEY) || "";
+        } catch (error) {
+          geoapifyApiKeyInput.value = "";
+        }
+      }
+    }
+
+    function saveReverseGeocoderSettings() {
+      const provider = reverseGeocoderSelect.value === "geoapify" ? "geoapify" : "bigdatacloud";
+      const apiKey = geoapifyApiKeyInput.value.trim();
+      if (provider === "geoapify" && !apiKey) {
+        messageLine.textContent = "Enter a Geoapify API key before selecting Geoapify.";
+        messageLine.classList.add("error");
+        return;
+      }
+
+      try {
+        localStorage.setItem(REVERSE_GEOCODER_STORAGE_KEY, provider);
+        if (apiKey) {
+          localStorage.setItem(GEOAPIFY_API_KEY_STORAGE_KEY, apiKey);
+        } else if (provider !== "geoapify") {
+          localStorage.removeItem(GEOAPIFY_API_KEY_STORAGE_KEY);
+        }
+      } catch (error) {
+        messageLine.textContent = "Could not save geocoding settings in this browser.";
+        messageLine.classList.add("error");
+        return;
+      }
+
+      messageLine.classList.remove("error");
+      loadAutomaticLocation();
     }
 
     function applyDisplayMode(mode, shouldSave = true) {
@@ -2800,6 +2883,38 @@
 
     async function resolveLocationName(coords) {
       try {
+        if (getSavedReverseGeocoder() === "geoapify") {
+          const apiKey = localStorage.getItem(GEOAPIFY_API_KEY_STORAGE_KEY) || "";
+          if (!apiKey) {
+            return null;
+          }
+
+          const params = new URLSearchParams({
+            lat: String(coords.latitude),
+            lon: String(coords.longitude),
+            format: "json",
+            apiKey
+          });
+          const response = await fetch(`${GEOAPIFY_REVERSE_GEOCODE_URL}?${params}`);
+          if (!response.ok) {
+            return null;
+          }
+
+          const data = await response.json();
+          const place = Array.isArray(data.results) ? data.results[0] : null;
+          if (!place) {
+            return null;
+          }
+
+          const normalizedPlace = {
+            city: place.city || place.town || place.village || place.municipality || place.county || place.name || "",
+            locality: place.suburb || place.neighbourhood || place.quarter || place.city_district || place.district || "",
+            principalSubdivision: place.state || "",
+            countryName: place.country || ""
+          };
+          return formatDetectedLocationName(normalizedPlace, coords);
+        }
+
         const params = new URLSearchParams({
           latitude: String(coords.latitude),
           longitude: String(coords.longitude),
@@ -3407,6 +3522,8 @@
     function init() {
       setCitySelectPlaceholder("Select city");
       applyDisplayMode(getSavedDisplayMode(), false);
+      reverseGeocoderSelect.value = getSavedReverseGeocoder();
+      updateReverseGeocoderSettingsUI();
       renderFavoriteCityOptions();
 
       for (const group of CITY_GROUPS) {
@@ -3440,6 +3557,8 @@
       displayModeSelect.addEventListener("change", () => {
         applyDisplayMode(displayModeSelect.value);
       });
+      reverseGeocoderSelect.addEventListener("change", updateReverseGeocoderSettingsUI);
+      saveGeocodingSettingsButton.addEventListener("click", saveReverseGeocoderSettings);
       customCityToggle.addEventListener("change", () => {
         customCity.classList.toggle("open", customCityToggle.checked);
         if (customCityToggle.checked) {
