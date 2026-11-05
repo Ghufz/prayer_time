@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b5f58">
+  <meta name="theme-color" content="#e4edff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Salah Times">
@@ -1361,6 +1361,377 @@
         gap: 10px;
       }
     }
+
+    /* Pixel Weather-inspired sky palette and rounded forecast cards. */
+    :root {
+      color-scheme: light;
+      --bg: #eef3fb;
+      --panel: rgba(255, 255, 255, 0.9);
+      --ink: #202b3d;
+      --muted: #66748a;
+      --line: #dfe6f0;
+      --accent: #5474ad;
+      --accent-deep: #344f7d;
+      --accent-soft: #e4edff;
+      --gold: #db9d4b;
+      --warn: #805b2b;
+      --warn-soft: #fff1d8;
+      --rose-soft: #ffede7;
+      --shadow: 0 10px 30px rgba(54, 75, 112, 0.09);
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse at 8% 0%, rgba(194, 224, 255, 0.68), transparent 34rem),
+        radial-gradient(ellipse at 94% 12%, rgba(222, 226, 255, 0.62), transparent 30rem),
+        linear-gradient(180deg, #f5f8ff 0%, var(--bg) 58%, #f5f3f8 100%);
+      font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
+    }
+
+    main {
+      width: min(820px, calc(100% - 32px));
+      padding: 24px 0 38px;
+    }
+
+    .topbar {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      margin-bottom: 16px;
+      border: 0;
+      border-radius: 24px;
+      background: transparent;
+      box-shadow: none;
+      color: var(--ink);
+      padding: 0;
+    }
+
+    .app-mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 6px 20px rgba(60, 80, 116, 0.12);
+    }
+
+    .app-mark img {
+      width: 54px;
+      height: 54px;
+    }
+
+    .title-copy {
+      min-height: 54px;
+    }
+
+    h1 {
+      color: #263a58;
+      font-size: 1.82rem;
+      letter-spacing: -0.035em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+    }
+
+    .settings-gear {
+      width: 48px;
+      min-width: 48px;
+      height: 48px;
+      border: 1px solid rgba(75, 100, 145, 0.12);
+      border-radius: 17px;
+      background: rgba(255, 255, 255, 0.76);
+      box-shadow: 0 6px 20px rgba(60, 80, 116, 0.08);
+      color: var(--accent-deep);
+    }
+
+    .settings-gear .icon {
+      width: 22px;
+      height: 22px;
+    }
+
+    .actions {
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 16px 40px rgba(43, 61, 93, 0.15);
+    }
+
+    .settings-panel {
+      border: 0;
+      border-radius: 17px;
+      background: #f7f9fd;
+    }
+
+    select,
+    input[type="text"],
+    input[type="password"] {
+      border-radius: 14px;
+      border-color: #dfe6f0;
+      background: #ffffff;
+      box-shadow: none;
+    }
+
+    button {
+      border-radius: 16px;
+      background: linear-gradient(135deg, #6282bd, #46669e);
+      box-shadow: 0 8px 18px rgba(67, 94, 146, 0.18);
+    }
+
+    .status-bar {
+      align-items: stretch;
+      margin-bottom: 14px;
+    }
+
+    #location-line,
+    .date-chip,
+    .sun-panel,
+    .table-wrap,
+    .mobile-prayer-card,
+    .mobile-schedule-state,
+    .qibla-panel {
+      border: 1px solid rgba(218, 227, 240, 0.92);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    #location-line {
+      min-height: 62px;
+      border-color: rgba(208, 222, 244, 0.95);
+      background: linear-gradient(135deg, #e4efff, #edf2ff);
+      box-shadow: none;
+      padding: 12px 16px;
+    }
+
+    .status-bar strong {
+      color: #314f7d;
+    }
+
+    .favorite-city-button {
+      border-radius: 14px;
+      border-color: rgba(81, 111, 165, 0.16);
+      background: rgba(255, 255, 255, 0.72);
+      color: #5c6d86;
+    }
+
+    .date-chip {
+      border-color: transparent;
+      box-shadow: none;
+      padding: 11px 14px;
+    }
+
+    .date-chip.gregorian {
+      background: #e7f1ff;
+      color: #3f608d;
+    }
+
+    .date-chip.hijri {
+      background: #fff0dc;
+      color: #805b2b;
+    }
+
+    .next {
+      position: relative;
+      overflow: hidden;
+      margin: 0 0 14px;
+      border: 0;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 90% 12%, rgba(255, 255, 255, 0.7) 0 3.5rem, transparent 3.6rem),
+        linear-gradient(125deg, #dceaff 0%, #e9eaff 56%, #f3e9ff 100%);
+      box-shadow: 0 16px 38px rgba(69, 91, 136, 0.14);
+      color: #263d61;
+      padding: 25px 28px;
+    }
+
+    .next > div {
+      position: relative;
+      z-index: 1;
+    }
+
+    .next strong {
+      color: #607493;
+      font-size: 0.76rem;
+      letter-spacing: 0.1em;
+    }
+
+    #next-line {
+      color: #263d61;
+      font-size: 2rem;
+      letter-spacing: -0.025em;
+    }
+
+    .remaining {
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 5px 16px rgba(67, 86, 127, 0.08);
+      color: #385781;
+      padding: 13px 16px;
+    }
+
+    .sun-panel {
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 18px;
+    }
+
+    .sun-panel-title strong,
+    .qibla-title strong {
+      color: #516d9b;
+    }
+
+    .sun-path-wrap {
+      border-radius: 19px;
+      background: linear-gradient(180deg, #d5eaff 0%, #eaf4ff 62%, #fff0d8 100%);
+    }
+
+    .sun-chip {
+      border-radius: 17px;
+      padding: 10px;
+    }
+
+    .sun-chip.sunrise {
+      background: #fff1dc;
+      color: #805b2b;
+    }
+
+    .sun-chip.sunset {
+      background: #ffede7;
+      color: #915d50;
+    }
+
+    .sun-icon {
+      border-radius: 13px;
+    }
+
+    .qibla-panel {
+      border-color: rgba(218, 227, 240, 0.92);
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .qibla-bearing {
+      color: #314f7d;
+    }
+
+    .qibla-compass {
+      border-color: rgba(85, 112, 158, 0.16);
+      background:
+        radial-gradient(circle at center, #ffffff 0 34%, rgba(255, 255, 255, 0) 35%),
+        conic-gradient(from 0deg, rgba(84, 116, 173, 0.1), rgba(219, 157, 75, 0.18), rgba(84, 116, 173, 0.1));
+      color: #435f8e;
+    }
+
+    .qibla-arrow path {
+      fill: #5474ad;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+    }
+
+    th {
+      background: #f5f8fd;
+    }
+
+    tbody tr.upcoming {
+      background: #fff3df;
+      box-shadow: inset 4px 0 0 #dda24f;
+    }
+
+    tbody tr.current {
+      background: #eaf2ff;
+      box-shadow: inset 4px 0 0 #6282bd;
+    }
+
+    .badge,
+    .badge.current {
+      background: rgba(84, 116, 173, 0.13);
+      color: #45649a;
+    }
+
+    .badge.upcoming {
+      background: rgba(219, 157, 75, 0.2);
+      color: #805b2b;
+    }
+
+    .current-countdown {
+      background: #fff0d8;
+      color: #805b2b;
+    }
+
+    .mobile-prayer-card {
+      box-shadow: 0 8px 22px rgba(54, 75, 112, 0.07);
+    }
+
+    .mobile-prayer-card.current {
+      border-color: rgba(84, 116, 173, 0.22);
+      background: linear-gradient(135deg, #e8f1ff, #f8fbff);
+      box-shadow: inset 4px 0 0 #6282bd, 0 9px 22px rgba(54, 75, 112, 0.08);
+    }
+
+    .mobile-prayer-card.upcoming {
+      border-color: rgba(219, 157, 75, 0.28);
+      background: linear-gradient(135deg, #fff2de, #fffaf2);
+      box-shadow: inset 4px 0 0 #dda24f, 0 9px 22px rgba(97, 75, 40, 0.07);
+    }
+
+    .mobile-prayer-icon {
+      border-radius: 15px;
+      background: rgba(84, 116, 173, 0.11);
+      color: #5474ad;
+    }
+
+    .mobile-prayer-card.current .mobile-prayer-icon {
+      background: rgba(84, 116, 173, 0.15);
+      color: #3f608d;
+    }
+
+    .mobile-prayer-card.upcoming .mobile-prayer-icon {
+      background: rgba(219, 157, 75, 0.2);
+      color: #805b2b;
+    }
+
+    @media (max-width: 720px) {
+      main {
+        width: min(100% - 24px, 820px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .next {
+        border-radius: 25px;
+        padding: 18px;
+      }
+
+      #next-line {
+        font-size: 1.55rem;
+      }
+
+      .sun-panel,
+      .qibla-panel {
+        border-radius: 22px;
+        padding: 15px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .next {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      #next-line {
+        font-size: 1.05rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1456,6 +1827,14 @@
       <div class="date-line" id="date-line"></div>
     </section>
 
+    <section class="next" aria-live="polite">
+      <div>
+        <strong>Upcoming Salah</strong>
+        <div id="next-line">Loading...</div>
+      </div>
+      <div class="remaining" id="remaining-line"></div>
+    </section>
+
     <section class="sun-panel" aria-label="Sunrise and sunset">
       <div class="sun-panel-header">
         <div class="sun-panel-title">
@@ -1526,14 +1905,6 @@
 
     <section class="mobile-schedule" id="mobile-times-list" aria-label="Salah time list">
       <div class="mobile-schedule-state">Loading salah times...</div>
-    </section>
-
-    <section class="next" aria-live="polite">
-      <div>
-        <strong>Upcoming Salah</strong>
-        <div id="next-line">Loading...</div>
-      </div>
-      <div class="remaining" id="remaining-line"></div>
     </section>
 
     <section class="qibla-panel" aria-label="Qibla direction">
