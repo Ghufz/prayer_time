@@ -667,6 +667,32 @@
       fill: rgba(255, 221, 123, 0.34);
     }
 
+    .sun-marker-time {
+      pointer-events: none;
+    }
+
+    .sun-marker-time rect {
+      fill: rgba(255, 255, 255, 0.92);
+      stroke: rgba(66, 91, 134, 0.2);
+      stroke-width: 1;
+    }
+
+    .sun-marker-time text {
+      fill: #314f7d;
+      font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .sun-endpoint-time {
+      fill: #526b91;
+      font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
     .sun-progress-text {
       color: var(--muted);
       font-size: 0.9rem;
@@ -1950,8 +1976,14 @@
           </defs>
           <line class="sun-horizon" x1="28" y1="118" x2="332" y2="118"></line>
           <use class="sun-arc" href="#sun-arc-path" xlink:href="#sun-arc-path"></use>
+          <text class="sun-endpoint-time" id="sunrise-arc-time" x="28" y="143" text-anchor="start">--:--</text>
+          <text class="sun-endpoint-time" id="sunset-arc-time" x="332" y="143" text-anchor="end">--:--</text>
           <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="118" r="18"></circle>
           <circle class="sun-marker" id="sun-marker" cx="32" cy="118" r="10"></circle>
+          <g class="sun-marker-time" id="sun-marker-time" aria-hidden="true" style="display: none;">
+            <rect x="-31" y="-12" width="62" height="24" rx="12"></rect>
+            <text id="sun-marker-time-label" x="0" y="1">--:--</text>
+          </g>
         </svg>
       </div>
     </section>
@@ -2160,8 +2192,12 @@
     const sunriseLine = document.querySelector("#sunrise-line");
     const sunsetLine = document.querySelector("#sunset-line");
     const sunProgressLine = document.querySelector("#sun-progress-line");
+    const sunriseArcTime = document.querySelector("#sunrise-arc-time");
+    const sunsetArcTime = document.querySelector("#sunset-arc-time");
     const sunMarker = document.querySelector("#sun-marker");
     const sunMarkerHalo = document.querySelector("#sun-marker-halo");
+    const sunMarkerTime = document.querySelector("#sun-marker-time");
+    const sunMarkerTimeLabel = document.querySelector("#sun-marker-time-label");
     const sunArcPath = document.querySelector("#sun-arc-path");
     const qiblaBearingLine = document.querySelector("#qibla-bearing");
     const qiblaLine = document.querySelector("#qibla-line");
@@ -3005,7 +3041,7 @@
       dateLine.appendChild(chip);
     }
 
-    function setSunMarkerPosition(progress) {
+    function setSunMarkerPosition(progress, timeLabel = "") {
       if (!sunArcPath || !sunMarker || !sunMarkerHalo) {
         return;
       }
@@ -3016,9 +3052,17 @@
       sunMarker.setAttribute("cy", point.y);
       sunMarkerHalo.setAttribute("cx", point.x);
       sunMarkerHalo.setAttribute("cy", point.y);
+
+      if (sunMarkerTime && sunMarkerTimeLabel) {
+        const labelX = clamp(point.x, 42, 318);
+        const labelY = clamp(point.y - 27, 17, 94);
+        sunMarkerTime.setAttribute("transform", `translate(${labelX} ${labelY})`);
+        sunMarkerTimeLabel.textContent = timeLabel;
+        sunMarkerTime.style.display = timeLabel ? "" : "none";
+      }
     }
 
-    function setSunMarker(progress, animate = false) {
+    function setSunMarker(progress, animate = false, timeLabel = "") {
       const safeProgress = clamp(progress, 0, 1);
 
       if (sunAnimationFrame) {
@@ -3027,11 +3071,11 @@
       }
 
       if (!animate || safeProgress === 0) {
-        setSunMarkerPosition(safeProgress);
+        setSunMarkerPosition(safeProgress, timeLabel);
         return;
       }
 
-      setSunMarkerPosition(0);
+      setSunMarkerPosition(0, timeLabel);
       const duration = 1400;
       const start = performance.now();
 
@@ -3039,13 +3083,13 @@
         const elapsed = timestamp - start;
         const rawProgress = clamp(elapsed / duration, 0, 1);
         const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
-        setSunMarkerPosition(safeProgress * easedProgress);
+        setSunMarkerPosition(safeProgress * easedProgress, timeLabel);
 
         if (rawProgress < 1) {
           sunAnimationFrame = requestAnimationFrame(step);
         } else {
           sunAnimationFrame = null;
-          setSunMarkerPosition(safeProgress);
+          setSunMarkerPosition(safeProgress, timeLabel);
         }
       }
 
@@ -3061,6 +3105,8 @@
 
       sunriseLine.textContent = sunriseDisplay;
       sunsetLine.textContent = sunsetDisplay;
+      sunriseArcTime.textContent = sunriseDisplay;
+      sunsetArcTime.textContent = sunsetDisplay;
 
       if (!sunrise || !sunset || sunset.minutes <= sunrise.minutes) {
         sunProgressLine.textContent = "Sun unavailable";
@@ -3088,7 +3134,8 @@
         sunProgressLine.textContent = formatSunStatus(progress, sunrise, sunset, now);
       }
 
-      setSunMarker(progress, true);
+      const timeLabel = `${pad(Math.floor(now.minutes / 60))}:${pad(now.minutes % 60)}`;
+      setSunMarker(progress, true, timeLabel);
     }
 
     function calculateQiblaBearing(coords) {
@@ -3739,6 +3786,8 @@
       timezoneLine.textContent = "Loading...";
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
+      sunriseArcTime.textContent = "--:--";
+      sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Loading...";
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
@@ -3759,6 +3808,8 @@
       timezoneLine.textContent = "Unavailable";
       sunriseLine.textContent = "--:--";
       sunsetLine.textContent = "--:--";
+      sunriseArcTime.textContent = "--:--";
+      sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Sun unavailable";
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
