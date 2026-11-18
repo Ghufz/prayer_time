@@ -353,6 +353,65 @@
       line-height: 1.4;
     }
 
+    .prayer-adjustments {
+      min-width: 0;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+
+    .prayer-adjustments legend {
+      padding: 0 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .prayer-adjustments p {
+      margin: 0 0 10px;
+    }
+
+    .prayer-adjustment-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .minute-adjustment-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .minute-adjustment-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .minute-adjustment-control input {
+      width: 76px;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--ink);
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      padding: 7px 9px;
+    }
+
     button:disabled {
       cursor: not-allowed;
       opacity: 0.65;
@@ -1789,6 +1848,17 @@
               <option value="1">Hanafi</option>
             </select>
           </div>
+          <fieldset class="prayer-adjustments">
+            <legend>Prayer time adjustments</legend>
+            <p class="settings-hint">Set a personal offset for each prayer. Positive values make the time later; negative values make it earlier.</p>
+            <div class="prayer-adjustment-list">
+              <label class="minute-adjustment-row"><span>Fajr</span><span class="minute-adjustment-control"><input type="number" data-prayer-adjustment="Fajr" min="-60" max="60" step="1" aria-label="Fajr adjustment in minutes"><span>min</span></span></label>
+              <label class="minute-adjustment-row"><span>Dhuhr</span><span class="minute-adjustment-control"><input type="number" data-prayer-adjustment="Dhuhr" min="-60" max="60" step="1" aria-label="Dhuhr adjustment in minutes"><span>min</span></span></label>
+              <label class="minute-adjustment-row"><span>Asr</span><span class="minute-adjustment-control"><input type="number" data-prayer-adjustment="Asr" min="-60" max="60" step="1" aria-label="Asr adjustment in minutes"><span>min</span></span></label>
+              <label class="minute-adjustment-row"><span>Maghrib</span><span class="minute-adjustment-control"><input type="number" data-prayer-adjustment="Maghrib" min="-60" max="60" step="1" aria-label="Maghrib adjustment in minutes"><span>min</span></span></label>
+              <label class="minute-adjustment-row"><span>Isha</span><span class="minute-adjustment-control"><input type="number" data-prayer-adjustment="Isha" min="-60" max="60" step="1" aria-label="Isha adjustment in minutes"><span>min</span></span></label>
+            </div>
+          </fieldset>
           <div class="controls">
             <label for="display-mode-select">Display mode</label>
             <select id="display-mode-select" aria-label="Display mode">
@@ -2046,6 +2116,7 @@
     const DISPLAY_MODE_STORAGE_KEY = "salah-times:display-mode";
     const REVERSE_GEOCODER_STORAGE_KEY = "salah-times:reverse-geocoder";
     const GEOAPIFY_API_KEY_STORAGE_KEY = "salah-times:geoapify-api-key";
+    const PRAYER_ADJUSTMENTS_STORAGE_KEY = "salah-times:prayer-adjustments";
     const FAVORITE_CITIES_STORAGE_KEY = "salah-times:favorite-cities";
     const FAVORITE_CITY_LIMIT = 5;
     const DETECTED_MAJOR_CITY_RULES = [
@@ -2070,6 +2141,7 @@
     const customCityToggle = document.querySelector("#custom-city-toggle");
     const citySelect = document.querySelector("#city-select");
     const schoolSelect = document.querySelector("#school-select");
+    const prayerAdjustmentInputs = Array.from(document.querySelectorAll("[data-prayer-adjustment]"));
     const displayModeSelect = document.querySelector("#display-mode-select");
     const reverseGeocoderSelect = document.querySelector("#reverse-geocoder-select");
     const geoapifyKeyRow = document.querySelector("#geoapify-key-row");
@@ -2104,6 +2176,8 @@
     let currentSalahCountdownTimer = null;
     let lastQiblaCoords = null;
     let currentCityContext = null;
+    let prayerAdjustments = {};
+    let activeScheduleContext = null;
 
     function setCitySelectPlaceholder(label) {
       let option = citySelect.querySelector("[data-city-placeholder='true']");
@@ -2699,6 +2773,64 @@
       };
     }
 
+    function getPrayerAdjustment(prayer) {
+      return Number(prayerAdjustments[prayer]) || 0;
+    }
+
+    function formatAdjustedPrayerTime(value, prayer) {
+      const original = String(value || "-");
+      const adjustment = getPrayerAdjustment(prayer);
+      const parsed = parseTiming(original);
+      if (!parsed || !adjustment) {
+        return original;
+      }
+
+      const adjustedMinutes = ((parsed.minutes + adjustment) % 1440 + 1440) % 1440;
+      const timeMatch = original.match(/(^|\D)([01]?\d|2[0-3]):([0-5]\d)(?!\d)/);
+      const suffix = timeMatch ? original.slice(timeMatch.index + timeMatch[0].length).trim() : "";
+      const formatted = `${pad(Math.floor(adjustedMinutes / 60))}:${pad(adjustedMinutes % 60)}`;
+      return suffix ? `${formatted} ${suffix}` : formatted;
+    }
+
+    function getSavedPrayerAdjustments() {
+      const adjustments = Object.fromEntries(PRAYERS.map((prayer) => [prayer, 0]));
+      try {
+        const saved = JSON.parse(localStorage.getItem(PRAYER_ADJUSTMENTS_STORAGE_KEY) || "{}");
+        for (const prayer of PRAYERS) {
+          const value = Number(saved && saved[prayer]);
+          if (Number.isFinite(value)) {
+            adjustments[prayer] = clamp(Math.round(value), -60, 60);
+          }
+        }
+      } catch (error) {
+        // Adjustments are optional; default to the unmodified prayer times.
+      }
+      return adjustments;
+    }
+
+    function handlePrayerAdjustmentChange(event) {
+      const input = event.currentTarget;
+      const prayer = input.dataset.prayerAdjustment;
+      const parsedValue = Number(input.value);
+      const minutes = Number.isFinite(parsedValue) ? clamp(Math.trunc(parsedValue), -60, 60) : 0;
+      input.value = String(minutes);
+      prayerAdjustments = { ...prayerAdjustments, [prayer]: minutes };
+
+      try {
+        localStorage.setItem(PRAYER_ADJUSTMENTS_STORAGE_KEY, JSON.stringify(prayerAdjustments));
+      } catch (error) {
+        // Keep the adjustment for this session if browser storage is unavailable.
+      }
+
+      if (!activeScheduleContext) {
+        return;
+      }
+
+      const context = activeScheduleContext;
+      renderSchedule(context.label, context.todayPayload, context.fetchTomorrowPayload, context.options)
+        .catch((error) => showLoadError(error));
+    }
+
     function formatRemaining(totalMinutes) {
       if (totalMinutes <= 0) {
         return "now";
@@ -3030,11 +3162,11 @@
           continue;
         }
 
-        const minutesUntil = dayDiff * 1440 + parsedTime.minutes - now.minutes;
+        const minutesUntil = dayDiff * 1440 + parsedTime.minutes + getPrayerAdjustment(prayer) - now.minutes;
         if (minutesUntil >= 0) {
           return {
             name: prayer,
-            displayTime: data.timings[prayer],
+            displayTime: formatAdjustedPrayerTime(data.timings[prayer], prayer),
             scheduleKey: scheduleDate.key,
             nowKey: now.key,
             minutesUntil
@@ -3056,26 +3188,28 @@
       }
 
       const periods = [
-        ["Fajr", data.timings.Fajr, data.timings.Sunrise],
-        ["Dhuhr", data.timings.Dhuhr, data.timings.Asr],
-        ["Asr", data.timings.Asr, data.timings.Maghrib],
-        ["Maghrib", data.timings.Maghrib, data.timings.Isha],
-        ["Isha", data.timings.Isha, null]
+        ["Fajr", data.timings.Fajr, data.timings.Sunrise, ""],
+        ["Dhuhr", data.timings.Dhuhr, data.timings.Asr, "Asr"],
+        ["Asr", data.timings.Asr, data.timings.Maghrib, "Maghrib"],
+        ["Maghrib", data.timings.Maghrib, data.timings.Isha, "Isha"],
+        ["Isha", data.timings.Isha, null, ""]
       ];
 
-      for (const [name, startValue, endValue] of periods) {
+      for (const [name, startValue, endValue, endPrayer] of periods) {
         const start = parseTiming(startValue);
         const end = endValue ? parseTiming(endValue) : null;
-        if (!start || start.minutes > now.minutes) {
+        const startMinutes = start ? start.minutes + getPrayerAdjustment(name) : null;
+        const endMinutes = end ? end.minutes + getPrayerAdjustment(endPrayer) : null;
+        if (!start || startMinutes > now.minutes) {
           continue;
         }
 
-        if (!end || now.minutes < end.minutes) {
+        if (!end || now.minutes < endMinutes) {
           return {
             name,
-            displayTime: startValue,
-            endDisplayTime: endValue || "midnight",
-            endMinutes: end ? end.minutes : 1440,
+            displayTime: formatAdjustedPrayerTime(startValue, name),
+            endDisplayTime: endValue ? (endPrayer ? formatAdjustedPrayerTime(endValue, endPrayer) : endValue) : "midnight",
+            endMinutes: end ? endMinutes : 1440,
             timezone,
             scheduleKey: scheduleDate.key
           };
@@ -3488,7 +3622,7 @@
       mobileTimesList.textContent = "";
 
       for (const prayer of PRAYERS) {
-        const timing = timings[prayer] || "-";
+        const timing = formatAdjustedPrayerTime(timings[prayer], prayer);
         const status = getMobilePrayerStatus(prayer, timing, payload, upcoming, current, hasCurrent);
         const card = document.createElement("article");
         card.className = `mobile-prayer-card ${getPrayerClass(prayer)}${status.className ? ` ${status.className}` : ""}`;
@@ -3563,7 +3697,7 @@
 
         row.innerHTML = `
           <td class="prayer-name">${prayer}</td>
-          <td class="time-cell">${timings[prayer] || "-"}</td>
+          <td class="time-cell">${formatAdjustedPrayerTime(timings[prayer], prayer)}</td>
           <td><span class="status-cell">${status}</span></td>
         `;
         timesBody.appendChild(row);
@@ -3636,6 +3770,7 @@
     }
 
     async function renderSchedule(label, todayPayload, fetchTomorrowPayload, options = {}) {
+      activeScheduleContext = { label, todayPayload, fetchTomorrowPayload, options };
       setCurrentCityContext(label, options.favoriteValue || label);
       let upcoming = findUpcoming(todayPayload);
       const current = findCurrentSalah(todayPayload);
@@ -3814,6 +3949,41 @@
       }
     }
 
+    async function refreshLastKnownLocation(cache = getLastSchedule()) {
+      if (!cache || !cache.label) {
+        loadDefaultCity();
+        return;
+      }
+
+      const requestDate = new Date();
+      const coords = getValidCoords(cache.qiblaCoords);
+      const fetchForDate = (date) => coords
+        ? fetchTimingsByCoordinates(coords, date)
+        : fetchTimings(cache.label, date);
+
+      messageLine.textContent = `Refreshing salah times for ${cache.label} using the last saved location...`;
+      messageLine.classList.add("offline");
+      messageLine.classList.remove("error");
+
+      try {
+        const todayPayload = await fetchForDate(requestDate);
+        const schedule = await renderSchedule(cache.label, todayPayload, fetchForDate, {
+          favoriteValue: cache.label,
+          qiblaCoords: coords,
+          message: "Location is unavailable. Refreshed using your last saved location."
+        });
+        const coordsSource = cache.qiblaCoordsSource || "";
+        saveLastSchedule(cache.label, todayPayload, schedule.tomorrowPayload, coords, coordsSource);
+        saveDailyCitySchedule(cache.label, requestDate, todayPayload, schedule.tomorrowPayload, coords, coordsSource);
+      } catch (error) {
+        if (!(await showCachedSchedule({
+          message: `Location is unavailable. Showing saved salah times for ${cache.label}.`
+        }))) {
+          showLoadError(error);
+        }
+      }
+    }
+
     function loadDefaultCity() {
       citySelect.value = DEFAULT_CITY;
       loadCity(DEFAULT_CITY);
@@ -3829,7 +3999,7 @@
         if (!showedCache) {
           loadDefaultCity();
         } else {
-          messageLine.textContent = "Location detection is not available. Showing last saved salah times.";
+          refreshLastKnownLocation();
         }
         return;
       }
@@ -3844,9 +4014,7 @@
         },
         () => {
           if (showedCache) {
-            messageLine.textContent = "Unable to detect your city. Showing last saved salah times.";
-            messageLine.classList.add("offline");
-            messageLine.classList.remove("error");
+            refreshLastKnownLocation();
           } else {
             loadDefaultCity();
           }
@@ -3893,6 +4061,12 @@
     function init() {
       setCitySelectPlaceholder("Select city");
       applyDisplayMode(getSavedDisplayMode(), false);
+      prayerAdjustments = getSavedPrayerAdjustments();
+      prayerAdjustmentInputs.forEach((input) => {
+        const prayer = input.dataset.prayerAdjustment;
+        input.value = String(prayerAdjustments[prayer] || 0);
+        input.addEventListener("change", handlePrayerAdjustmentChange);
+      });
       reverseGeocoderSelect.value = getSavedReverseGeocoder();
       updateReverseGeocoderSettingsUI();
       renderFavoriteCityOptions();
