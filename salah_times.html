@@ -1694,6 +1694,55 @@
       height: 240px;
     }
 
+    .sun-path-wrap {
+      background: linear-gradient(180deg, #E8F4FA 0%, #FDF8EC 100%);
+      transition: background 700ms ease;
+    }
+
+    .sun-path-wrap[data-sky="golden"] {
+      background: linear-gradient(180deg, #FDE6C4 0%, #FFF7ED 100%);
+    }
+
+    .sun-path-wrap[data-sky="night"] {
+      background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-arc {
+      stroke: #cbd5e1;
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-horizon {
+      stroke: rgba(226, 232, 240, 0.32);
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-endpoint-time,
+    .sun-path-wrap[data-sky="night"] .sun-panel-time {
+      fill: #e2e8f0;
+      color: #e2e8f0;
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-endpoint-icon {
+      stroke: #cbd5e1;
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-marker-time rect {
+      fill: rgba(15, 23, 42, 0.94);
+      stroke: rgba(226, 232, 240, 0.3);
+    }
+
+    .sun-path-wrap[data-sky="night"] .sun-marker-time text {
+      fill: #f8fafc;
+    }
+
+    .moon-marker-halo {
+      fill: rgba(226, 232, 240, 0.16);
+    }
+
+    .moon-marker-shape {
+      fill: #f8fafc;
+      filter: drop-shadow(0 4px 10px rgba(226, 232, 240, 0.3));
+    }
+
     .sun-chip {
       border-radius: 17px;
       padding: 10px;
@@ -2018,6 +2067,10 @@
           </g>
           <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="168" r="18"></circle>
           <circle class="sun-marker" id="sun-marker" cx="32" cy="168" r="10"></circle>
+          <g id="moon-marker" style="display: none;" aria-hidden="true">
+            <circle class="moon-marker-halo" cx="0" cy="0" r="18"></circle>
+            <path class="moon-marker-shape" d="M 11 1.5 A 10.5 10.5 0 0 0 22.5 13 A 9.4 9.4 0 1 1 11 1.5 Z" transform="translate(-12 -12)"></path>
+          </g>
           <g class="sun-marker-time" id="sun-marker-time" aria-hidden="true" style="display: none;">
             <rect x="-38" y="-14" width="76" height="28" rx="14"></rect>
             <text id="sun-marker-time-label" x="0" y="1">--:--</text>
@@ -2228,10 +2281,13 @@
     const dateLine = document.querySelector("#date-line");
     const timezoneLine = document.querySelector("#timezone-line");
     const sunProgressLine = document.querySelector("#sun-progress-line");
+    const sunPathWrap = document.querySelector(".sun-path-wrap");
+    const sunPathTitle = document.querySelector("#sun-path-title");
     const sunriseArcTime = document.querySelector("#sunrise-arc-time");
     const sunsetArcTime = document.querySelector("#sunset-arc-time");
     const sunMarker = document.querySelector("#sun-marker");
     const sunMarkerHalo = document.querySelector("#sun-marker-halo");
+    const moonMarker = document.querySelector("#moon-marker");
     const sunMarkerTime = document.querySelector("#sun-marker-time");
     const sunMarkerTimeLabel = document.querySelector("#sun-marker-time-label");
     const sunArcPath = document.querySelector("#sun-arc-path");
@@ -2245,6 +2301,7 @@
     const messageLine = document.querySelector("#message-line");
     let deferredInstallPrompt = null;
     let sunAnimationFrame = null;
+    let sunPathRefreshTimer = null;
     let currentSalahCountdownTimer = null;
     let lastQiblaCoords = null;
     let currentCityContext = null;
@@ -3088,6 +3145,9 @@
       sunMarker.setAttribute("cy", point.y);
       sunMarkerHalo.setAttribute("cx", point.x);
       sunMarkerHalo.setAttribute("cy", point.y);
+      if (moonMarker) {
+        moonMarker.setAttribute("transform", `translate(${point.x} ${point.y})`);
+      }
 
       if (sunMarkerTime && sunMarkerTimeLabel) {
         const labelX = clamp(point.x, 48, 472);
@@ -3132,10 +3192,31 @@
       sunAnimationFrame = requestAnimationFrame(step);
     }
 
-    function renderSunPath(payload) {
+    function setSunSkyMode(mode = "morning", showMoon = false) {
+      if (sunPathWrap) {
+        sunPathWrap.dataset.sky = mode;
+      }
+      if (sunMarker && sunMarkerHalo) {
+        sunMarker.style.display = showMoon ? "none" : "";
+        sunMarkerHalo.style.display = showMoon ? "none" : "";
+      }
+      if (moonMarker) {
+        moonMarker.style.display = showMoon ? "" : "none";
+      }
+      if (sunPathTitle) {
+        sunPathTitle.textContent = showMoon
+          ? "Night path from Maghrib to Fajr"
+          : "Sun path from sunrise to sunset";
+      }
+    }
+
+    function renderSunPath(payload, animate = true) {
       const data = payload.data;
       const sunrise = parseTiming(data.timings.Sunrise);
       const sunset = parseTiming(data.timings.Sunset || data.timings.Maghrib);
+      const fajr = parseTiming(data.timings.Fajr);
+      const asr = parseTiming(data.timings.Asr);
+      const maghrib = parseTiming(data.timings.Maghrib || data.timings.Sunset);
       const sunriseDisplay = data.timings.Sunrise || "--:--";
       const sunsetDisplay = data.timings.Sunset || data.timings.Maghrib || "--:--";
 
@@ -3144,6 +3225,7 @@
 
       if (!sunrise || !sunset || sunset.minutes <= sunrise.minutes) {
         sunProgressLine.textContent = "Sun unavailable";
+        setSunSkyMode("morning");
         setSunMarker(0);
         return;
       }
@@ -3155,6 +3237,15 @@
       const now = getCurrentInTimezone(timezone);
       const scheduleDate = parseApiDate(data.date.gregorian.date);
       const dayDiff = dateKeyToUtcDay(scheduleDate.key) - dateKeyToUtcDay(now.key);
+      const isCurrentScheduleDay = dayDiff === 0;
+      const isNight = Boolean(
+        isCurrentScheduleDay && fajr && maghrib &&
+        (now.minutes < fajr.minutes || now.minutes >= maghrib.minutes)
+      );
+      const isGoldenHour = Boolean(
+        isCurrentScheduleDay && asr && maghrib &&
+        now.minutes >= asr.minutes && now.minutes < maghrib.minutes
+      );
       let progress = 0;
 
       if (dayDiff < 0) {
@@ -3168,8 +3259,39 @@
         sunProgressLine.textContent = formatSunStatus(progress, sunrise, sunset, now);
       }
 
+      setSunSkyMode(isNight ? "night" : isGoldenHour ? "golden" : "morning", isNight);
+
+      if (isNight && fajr && maghrib) {
+        const nightDuration = 1440 - maghrib.minutes + fajr.minutes;
+        const nightElapsed = now.minutes >= maghrib.minutes
+          ? now.minutes - maghrib.minutes
+          : 1440 - maghrib.minutes + now.minutes;
+        progress = 1 - clamp(nightElapsed / nightDuration, 0, 1);
+        sunProgressLine.textContent = `Night · Fajr ${data.timings.Fajr}`;
+      }
+
       const timeLabel = `${pad(Math.floor(now.minutes / 60))}:${pad(now.minutes % 60)}`;
-      setSunMarker(progress, true, timeLabel);
+      setSunMarker(progress, animate && !isNight, timeLabel);
+    }
+
+    function stopSunPathRefresh() {
+      if (sunPathRefreshTimer) {
+        clearInterval(sunPathRefreshTimer);
+        sunPathRefreshTimer = null;
+      }
+    }
+
+    function startSunPathRefresh() {
+      if (sunPathRefreshTimer) {
+        return;
+      }
+
+      sunPathRefreshTimer = setInterval(() => {
+        const payload = activeScheduleContext && activeScheduleContext.todayPayload;
+        if (payload) {
+          renderSunPath(payload, false);
+        }
+      }, 60 * 1000);
     }
 
     function calculateQiblaBearing(coords) {
@@ -3802,6 +3924,7 @@
       renderDateChip("Hijri", hijriDate, "hijri");
       timezoneLine.textContent = data.meta.timezone || "Local timezone";
       renderSunPath(payload);
+      startSunPathRefresh();
       renderQiblaDirection(qiblaCoords || lastQiblaCoords);
 
       if (!upcoming) {
@@ -3816,6 +3939,7 @@
     }
 
     function showLoadingState(label) {
+      stopSunPathRefresh();
       setCurrentCityContext("", "");
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Loading salah times...</td></tr>';
@@ -3826,6 +3950,7 @@
       sunriseArcTime.textContent = "--:--";
       sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Loading...";
+      setSunSkyMode("morning");
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
       qiblaArrow.style.transform = "rotate(0deg)";
@@ -3837,6 +3962,7 @@
     }
 
     function showLoadError(error) {
+      stopSunPathRefresh();
       setCurrentCityContext("", "");
       stopCurrentSalahCountdown();
       timesBody.innerHTML = '<tr><td colspan="3">Unable to load salah times.</td></tr>';
@@ -3846,6 +3972,7 @@
       sunriseArcTime.textContent = "--:--";
       sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Sun unavailable";
+      setSunSkyMode("morning");
       qiblaBearingLine.textContent = "--";
       qiblaLine.textContent = "Location is needed to show Qibla direction.";
       qiblaArrow.style.transform = "rotate(0deg)";
