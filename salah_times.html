@@ -1763,14 +1763,25 @@
     }
 
     tbody tr.current {
-      background: var(--primary-soft);
-      box-shadow: inset 4px 0 0 var(--primary);
+      background: linear-gradient(100deg, #D6EADD 0%, #EFF6F0 100%);
+      box-shadow: inset 5px 0 0 var(--primary), inset 0 0 0 2px rgba(217, 155, 38, 0.62);
+    }
+
+    tbody tr.current .prayer-name,
+    tbody tr.current .time-cell {
+      color: var(--primary);
+      font-weight: 850;
     }
 
     .badge,
     .badge.current {
       background: var(--primary-soft);
       color: var(--primary);
+    }
+
+    .badge.current {
+      background: var(--primary);
+      color: #ffffff;
     }
 
     .badge.upcoming {
@@ -1788,9 +1799,15 @@
     }
 
     .mobile-prayer-card.current {
-      border-color: rgba(20, 83, 60, 0.22);
-      background: linear-gradient(135deg, var(--primary-soft), #F8FBF8);
-      box-shadow: inset 4px 0 0 var(--primary), 0 9px 22px rgba(35, 60, 46, 0.08);
+      border-width: 2px;
+      border-color: rgba(217, 155, 38, 0.68);
+      background: linear-gradient(135deg, #D6EADD, #F4F8F4);
+      box-shadow: inset 5px 0 0 var(--primary), 0 10px 24px rgba(35, 60, 46, 0.12);
+    }
+
+    .mobile-prayer-card.current .mobile-prayer-time {
+      color: var(--primary);
+      font-weight: 850;
     }
 
     .mobile-prayer-card.upcoming {
