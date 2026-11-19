@@ -654,6 +654,14 @@
       font-weight: 800;
     }
 
+    .sun-progress-text {
+      fill: var(--primary);
+      font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 750;
+      text-anchor: middle;
+    }
+
     .sun-endpoint-icon {
       fill: none;
       stroke-width: 2.4;
@@ -667,14 +675,6 @@
 
     .sun-endpoint-icon.sunset {
       stroke: #bd6c56;
-    }
-
-    .sun-progress-text {
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 750;
-      line-height: 1.2;
-      text-align: center;
     }
 
     .qibla-panel {
@@ -1659,6 +1659,10 @@
       height: 240px;
     }
 
+    .sun-path.wide {
+      width: 100%;
+    }
+
     .sun-path-wrap {
       background: linear-gradient(180deg, #F1F4F0 0%, #FDF8EC 100%);
       transition: background 700ms ease;
@@ -2045,6 +2049,7 @@
           <use class="sun-arc" href="#sun-arc-path" xlink:href="#sun-arc-path"></use>
           <text class="sun-endpoint-time" id="sunrise-arc-time" x="28" y="198" text-anchor="start">--:--</text>
           <text class="sun-endpoint-time" id="sunset-arc-time" x="492" y="198" text-anchor="end">--:--</text>
+          <text class="sun-progress-text" id="sun-progress-line" x="260" y="198">Loading...</text>
           <g class="sun-endpoint-icon sunrise" transform="translate(2 172) scale(0.85)" aria-hidden="true">
             <path d="M2 19h20"></path>
             <path d="M7 17a5 5 0 0 1 10 0"></path>
@@ -2068,7 +2073,6 @@
             <text id="sun-marker-time-label" x="0" y="1">--:--</text>
           </g>
         </svg>
-        <div class="sun-progress-text" id="sun-progress-line">Loading...</div>
       </div>
     </section>
 
@@ -2275,9 +2279,14 @@
     const timezoneLine = document.querySelector("#timezone-line");
     const sunProgressLine = document.querySelector("#sun-progress-line");
     const sunPathWrap = document.querySelector(".sun-path-wrap");
+    const sunPathSvg = document.querySelector(".sun-path");
+    const sunPathGeometry = document.querySelector("#sun-arc-path");
+    const sunHorizon = document.querySelector(".sun-horizon");
     const sunPathTitle = document.querySelector("#sun-path-title");
     const sunriseArcTime = document.querySelector("#sunrise-arc-time");
     const sunsetArcTime = document.querySelector("#sunset-arc-time");
+    const sunriseArcIcon = document.querySelector(".sun-endpoint-icon.sunrise");
+    const sunsetArcIcon = document.querySelector(".sun-endpoint-icon.sunset");
     const sunMarker = document.querySelector("#sun-marker");
     const sunMarkerHalo = document.querySelector("#sun-marker-halo");
     const moonMarker = document.querySelector("#moon-marker");
@@ -3143,13 +3152,52 @@
       }
 
       if (sunMarkerTime && sunMarkerTimeLabel) {
-        const labelX = clamp(point.x, 48, 472);
+        const maxLabelX = sunPathSvg && sunPathSvg.classList.contains("wide") ? 672 : 472;
+        const labelX = clamp(point.x, 48, maxLabelX);
         const labelY = clamp(point.y - 32, 18, 136);
         sunMarkerTime.setAttribute("transform", `translate(${labelX} ${labelY})`);
         sunMarkerTimeLabel.textContent = timeLabel;
         sunMarkerTime.style.display = timeLabel ? "" : "none";
       }
     }
+
+    function updateSunPathLayout() {
+      if (!sunPathWrap || !sunPathSvg || !sunPathGeometry || !sunHorizon) {
+        return false;
+      }
+
+      const wide = sunPathWrap.clientWidth >= 760;
+      const wasWide = sunPathSvg.classList.contains("wide");
+      const scale = wide ? 720 / 520 : 1;
+      sunPathSvg.classList.toggle("wide", wide);
+      sunPathSvg.setAttribute("viewBox", wide ? "0 0 720 210" : "0 0 520 210");
+      sunPathSvg.setAttribute("preserveAspectRatio", wide ? "none" : "xMidYMid meet");
+      sunPathGeometry.setAttribute(
+        "d",
+        wide ? "M44.31 168 C200.77 -10 519.23 -10 675.69 168" : "M32 168 C145 -10 375 -10 488 168"
+      );
+      sunHorizon.setAttribute("x1", String(28 * scale));
+      sunHorizon.setAttribute("x2", String(492 * scale));
+      sunriseArcTime.setAttribute("x", String(28 * scale));
+      sunsetArcTime.setAttribute("x", String(492 * scale));
+      sunProgressLine.setAttribute("x", String(260 * scale));
+      sunriseArcIcon.setAttribute("transform", `translate(${2 * scale} 172) scale(0.85)`);
+      sunsetArcIcon.setAttribute("transform", `translate(${498 * scale} 172) scale(0.85)`);
+
+      if (wide !== wasWide) {
+        setSunMarkerPosition(0);
+      }
+      return wide !== wasWide;
+    }
+
+    function handleSunPathResize() {
+      if (updateSunPathLayout() && activeScheduleContext) {
+        renderSunPath(activeScheduleContext.todayPayload, false);
+      }
+    }
+
+    updateSunPathLayout();
+    window.addEventListener("resize", handleSunPathResize);
 
     function setSunMarker(progress, animate = false, timeLabel = "") {
       const safeProgress = clamp(progress, 0, 1);
