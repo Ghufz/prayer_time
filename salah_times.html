@@ -3469,6 +3469,11 @@
 
     async function resolveLocationName(coords) {
       try {
+        const roundedCoords = {
+          latitude: Number(Number(coords.latitude).toFixed(3)),
+          longitude: Number(Number(coords.longitude).toFixed(3))
+        };
+
         if (getSavedReverseGeocoder() === "geoapify") {
           const apiKey = localStorage.getItem(GEOAPIFY_API_KEY_STORAGE_KEY) || "";
           if (!apiKey) {
@@ -3476,8 +3481,8 @@
           }
 
           const params = new URLSearchParams({
-            lat: String(coords.latitude),
-            lon: String(coords.longitude),
+            lat: String(roundedCoords.latitude),
+            lon: String(roundedCoords.longitude),
             format: "json",
             apiKey
           });
@@ -3502,8 +3507,8 @@
         }
 
         const params = new URLSearchParams({
-          latitude: String(coords.latitude),
-          longitude: String(coords.longitude),
+          latitude: String(roundedCoords.latitude),
+          longitude: String(roundedCoords.longitude),
           localityLanguage: "en"
         });
         const response = await fetch(`${REVERSE_GEOCODE_URL}?${params}`);
