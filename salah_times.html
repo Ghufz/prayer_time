@@ -680,7 +680,7 @@
     .sun-marker-time text {
       fill: #314f7d;
       font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
-      font-size: 12px;
+      font-size: 16px;
       font-weight: 700;
       text-anchor: middle;
       dominant-baseline: middle;
@@ -689,7 +689,7 @@
     .sun-endpoint-time {
       fill: #526b91;
       font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
-      font-size: 11px;
+      font-size: 15px;
       font-weight: 700;
     }
 
@@ -1667,8 +1667,16 @@
     }
 
     .sun-path-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 320px;
       border-radius: 19px;
       background: linear-gradient(180deg, #d5eaff 0%, #eaf4ff 62%, #fff0d8 100%);
+    }
+
+    .sun-path {
+      width: min(100%, 760px);
+      height: 320px;
     }
 
     .sun-chip {
@@ -1802,6 +1810,21 @@
         border-radius: 22px;
         padding: 15px;
       }
+
+      .sun-path-wrap {
+        min-height: 220px;
+      }
+
+      .sun-path {
+        width: 100%;
+        min-height: 220px;
+        height: 220px;
+      }
+
+      .sun-endpoint-time,
+      .sun-marker-time text {
+        font-size: 22px;
+      }
     }
 
     @media (max-width: 420px) {
@@ -1815,6 +1838,15 @@
 
       #next-line {
         font-size: 1.05rem;
+      }
+
+      .sun-path-wrap {
+        min-height: 200px;
+      }
+
+      .sun-path {
+        min-height: 200px;
+        height: 200px;
       }
     }
   </style>
@@ -1969,19 +2001,19 @@
         </div>
       </div>
       <div class="sun-path-wrap">
-        <svg class="sun-path" viewBox="0 0 360 150" role="img" aria-labelledby="sun-path-title" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <svg class="sun-path" viewBox="0 0 520 210" role="img" aria-labelledby="sun-path-title" xmlns:xlink="http://www.w3.org/1999/xlink">
           <title id="sun-path-title">Sun path from sunrise to sunset</title>
           <defs>
-            <path id="sun-arc-path" d="M32 118 C95 16 265 16 328 118"></path>
+            <path id="sun-arc-path" d="M32 168 C145 -10 375 -10 488 168"></path>
           </defs>
-          <line class="sun-horizon" x1="28" y1="118" x2="332" y2="118"></line>
+          <line class="sun-horizon" x1="28" y1="168" x2="492" y2="168"></line>
           <use class="sun-arc" href="#sun-arc-path" xlink:href="#sun-arc-path"></use>
-          <text class="sun-endpoint-time" id="sunrise-arc-time" x="28" y="143" text-anchor="start">--:--</text>
-          <text class="sun-endpoint-time" id="sunset-arc-time" x="332" y="143" text-anchor="end">--:--</text>
-          <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="118" r="18"></circle>
-          <circle class="sun-marker" id="sun-marker" cx="32" cy="118" r="10"></circle>
+          <text class="sun-endpoint-time" id="sunrise-arc-time" x="28" y="198" text-anchor="start">--:--</text>
+          <text class="sun-endpoint-time" id="sunset-arc-time" x="492" y="198" text-anchor="end">--:--</text>
+          <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="168" r="18"></circle>
+          <circle class="sun-marker" id="sun-marker" cx="32" cy="168" r="10"></circle>
           <g class="sun-marker-time" id="sun-marker-time" aria-hidden="true" style="display: none;">
-            <rect x="-31" y="-12" width="62" height="24" rx="12"></rect>
+            <rect x="-38" y="-14" width="76" height="28" rx="14"></rect>
             <text id="sun-marker-time-label" x="0" y="1">--:--</text>
           </g>
         </svg>
@@ -3054,8 +3086,8 @@
       sunMarkerHalo.setAttribute("cy", point.y);
 
       if (sunMarkerTime && sunMarkerTimeLabel) {
-        const labelX = clamp(point.x, 42, 318);
-        const labelY = clamp(point.y - 27, 17, 94);
+        const labelX = clamp(point.x, 48, 472);
+        const labelY = clamp(point.y - 32, 18, 136);
         sunMarkerTime.setAttribute("transform", `translate(${labelX} ${labelY})`);
         sunMarkerTimeLabel.textContent = timeLabel;
         sunMarkerTime.style.display = timeLabel ? "" : "none";
