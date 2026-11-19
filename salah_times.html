@@ -530,45 +530,6 @@
       padding: 14px;
     }
 
-    .sun-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    .sun-panel-title {
-      display: flex;
-      align-items: baseline;
-      gap: 7px;
-      min-width: 0;
-    }
-
-    .sun-panel-title strong {
-      flex: 0 0 auto;
-      color: var(--warn);
-      font-size: 0.82rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .sun-panel-title strong::after {
-      content: "·";
-      margin-left: 7px;
-      color: rgba(138, 91, 24, 0.48);
-    }
-
-    .sun-panel-title span {
-      min-width: 0;
-      color: var(--muted);
-      font-size: 0.8rem;
-      font-weight: 700;
-      line-height: 1.15;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
     .sun-times {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -687,10 +648,10 @@
     }
 
     .sun-endpoint-time {
-      fill: var(--muted);
+      fill: var(--text-main);
       font-family: "Google Sans", "Segoe UI", Arial, sans-serif;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 19px;
+      font-weight: 800;
     }
 
     .sun-endpoint-icon {
@@ -711,6 +672,9 @@
     .sun-progress-text {
       color: var(--muted);
       font-size: 0.9rem;
+      font-weight: 750;
+      line-height: 1.2;
+      text-align: center;
     }
 
     .qibla-panel {
@@ -1321,15 +1285,6 @@
         gap: 10px;
       }
 
-      .sun-panel-header {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .sun-panel-title span {
-        font-size: 0.76rem;
-      }
-
       .qibla-panel {
         grid-template-columns: 1fr;
       }
@@ -1434,14 +1389,6 @@
       .sun-icon .icon {
         width: 18px;
         height: 18px;
-      }
-
-      .sun-panel-title {
-        gap: 5px;
-      }
-
-      .sun-panel-title strong::after {
-        margin-left: 5px;
       }
 
       .custom-row button {
@@ -1654,10 +1601,10 @@
       border: 1px solid rgba(217, 155, 38, 0.32);
       border-radius: 30px;
       background:
-        radial-gradient(circle at 94% 8%, rgba(217, 155, 38, 0.22), transparent 14rem),
-        linear-gradient(135deg, #1B4B39 0%, #35614A 50%, #42664F 100%);
-      box-shadow: 0 16px 38px rgba(35, 60, 46, 0.24);
-      color: #ffffff;
+        radial-gradient(circle at 94% 8%, rgba(217, 155, 38, 0.16), transparent 14rem),
+        linear-gradient(135deg, #E3F0EA 0%, #F2F6F1 55%, #FDF5E6 100%);
+      box-shadow: 0 14px 32px rgba(35, 60, 46, 0.1);
+      color: var(--primary);
       padding: 25px 28px;
     }
 
@@ -1667,13 +1614,13 @@
     }
 
     .next strong {
-      color: rgba(255, 255, 255, 0.82);
+      color: var(--primary);
       font-size: 0.76rem;
       letter-spacing: 0.1em;
     }
 
     #next-line {
-      color: #ffffff;
+      color: var(--primary);
       font-size: 2rem;
       letter-spacing: -0.025em;
     }
@@ -1688,12 +1635,12 @@
     }
 
     .sun-panel {
-      gap: 14px;
+      gap: 0;
       margin-bottom: 14px;
-      padding: 18px;
+      overflow: hidden;
+      padding: 0;
     }
 
-    .sun-panel-title strong,
     .qibla-title strong {
       color: var(--primary);
     }
@@ -1701,8 +1648,9 @@
     .sun-path-wrap {
       display: grid;
       place-items: center;
+      gap: 8px;
       min-height: 240px;
-      border-radius: 19px;
+      border-radius: 23px;
       background: linear-gradient(180deg, #d5eaff 0%, #eaf4ff 62%, #fff0d8 100%);
     }
 
@@ -1733,7 +1681,7 @@
     }
 
     .sun-path-wrap[data-sky="night"] .sun-endpoint-time,
-    .sun-path-wrap[data-sky="night"] .sun-panel-time {
+    .sun-path-wrap[data-sky="night"] .sun-progress-text {
       fill: #e2e8f0;
       color: #e2e8f0;
     }
@@ -1892,14 +1840,23 @@
         font-size: 1.55rem;
       }
 
-      .sun-panel,
       .qibla-panel {
         border-radius: 22px;
         padding: 15px;
       }
 
+      .sun-panel {
+        border-radius: 22px;
+        padding: 0;
+      }
+
       .sun-path-wrap {
-        min-height: 190px;
+        border-radius: 21px;
+      }
+
+      .sun-path-wrap {
+        height: auto;
+        min-height: 0;
       }
 
       .sun-path {
@@ -1937,7 +1894,8 @@
       }
 
       .sun-path-wrap {
-        min-height: 200px;
+        height: auto;
+        min-height: 0;
       }
 
       .sun-path {
@@ -2060,12 +2018,6 @@
     </section>
 
     <section class="sun-panel" aria-label="Sunrise and sunset">
-      <div class="sun-panel-header">
-        <div class="sun-panel-title">
-          <strong>Sun Path</strong>
-          <span id="sun-progress-line">Loading...</span>
-        </div>
-      </div>
       <div class="sun-path-wrap">
         <svg class="sun-path" viewBox="0 0 520 210" role="img" aria-labelledby="sun-path-title" xmlns:xlink="http://www.w3.org/1999/xlink">
           <title id="sun-path-title">Sun path from sunrise to sunset</title>
@@ -2099,6 +2051,7 @@
             <text id="sun-marker-time-label" x="0" y="1">--:--</text>
           </g>
         </svg>
+        <div class="sun-progress-text" id="sun-progress-line">Loading...</div>
       </div>
     </section>
 
