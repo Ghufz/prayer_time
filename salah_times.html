@@ -693,6 +693,21 @@
       font-weight: 700;
     }
 
+    .sun-endpoint-icon {
+      fill: none;
+      stroke-width: 2.4;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sun-endpoint-icon.sunrise {
+      stroke: #c58a35;
+    }
+
+    .sun-endpoint-icon.sunset {
+      stroke: #bd6c56;
+    }
+
     .sun-progress-text {
       color: var(--muted);
       font-size: 0.9rem;
@@ -1669,14 +1684,14 @@
     .sun-path-wrap {
       display: grid;
       place-items: center;
-      min-height: 320px;
+      min-height: 240px;
       border-radius: 19px;
       background: linear-gradient(180deg, #d5eaff 0%, #eaf4ff 62%, #fff0d8 100%);
     }
 
     .sun-path {
-      width: min(100%, 760px);
-      height: 320px;
+      width: min(100%, 600px);
+      height: 240px;
     }
 
     .sun-chip {
@@ -1812,13 +1827,13 @@
       }
 
       .sun-path-wrap {
-        min-height: 220px;
+        min-height: 190px;
       }
 
       .sun-path {
         width: 100%;
-        min-height: 220px;
-        height: 220px;
+        min-height: 190px;
+        height: 190px;
       }
 
       .sun-endpoint-time,
@@ -1838,6 +1853,15 @@
 
       #next-line {
         font-size: 1.05rem;
+      }
+
+      .sun-path-wrap {
+        min-height: 170px;
+      }
+
+      .sun-path {
+        min-height: 170px;
+        height: 170px;
       }
 
       .sun-path-wrap {
@@ -1969,36 +1993,6 @@
           <strong>Sun Path</strong>
           <span id="sun-progress-line">Loading...</span>
         </div>
-        <div class="sun-times">
-          <div class="sun-chip sunrise">
-            <span class="sun-icon">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 18h18"></path>
-                <path d="M7 15a5 5 0 0 1 10 0"></path>
-                <path d="M12 12V4"></path>
-                <path d="m8 8 4-4 4 4"></path>
-              </svg>
-            </span>
-            <span class="sun-label">
-              <span>Sunrise</span>
-              <strong id="sunrise-line">--:--</strong>
-            </span>
-          </div>
-          <div class="sun-chip sunset">
-            <span class="sun-icon">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 18h18"></path>
-                <path d="M7 15a5 5 0 0 1 10 0"></path>
-                <path d="M12 4v8"></path>
-                <path d="m8 8 4 4 4-4"></path>
-              </svg>
-            </span>
-            <span class="sun-label">
-              <span>Sunset</span>
-              <strong id="sunset-line">--:--</strong>
-            </span>
-          </div>
-        </div>
       </div>
       <div class="sun-path-wrap">
         <svg class="sun-path" viewBox="0 0 520 210" role="img" aria-labelledby="sun-path-title" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -2010,6 +2004,18 @@
           <use class="sun-arc" href="#sun-arc-path" xlink:href="#sun-arc-path"></use>
           <text class="sun-endpoint-time" id="sunrise-arc-time" x="28" y="198" text-anchor="start">--:--</text>
           <text class="sun-endpoint-time" id="sunset-arc-time" x="492" y="198" text-anchor="end">--:--</text>
+          <g class="sun-endpoint-icon sunrise" transform="translate(2 172) scale(0.85)" aria-hidden="true">
+            <path d="M2 19h20"></path>
+            <path d="M7 17a5 5 0 0 1 10 0"></path>
+            <path d="M12 12V3"></path>
+            <path d="m8 7 4-4 4 4"></path>
+          </g>
+          <g class="sun-endpoint-icon sunset" transform="translate(498 172) scale(0.85)" aria-hidden="true">
+            <path d="M2 19h20"></path>
+            <path d="M7 17a5 5 0 0 1 10 0"></path>
+            <path d="M12 3v9"></path>
+            <path d="m8 8 4 4 4-4"></path>
+          </g>
           <circle class="sun-marker-halo" id="sun-marker-halo" cx="32" cy="168" r="18"></circle>
           <circle class="sun-marker" id="sun-marker" cx="32" cy="168" r="10"></circle>
           <g class="sun-marker-time" id="sun-marker-time" aria-hidden="true" style="display: none;">
@@ -2221,8 +2227,6 @@
     const locationLine = document.querySelector("#location-line");
     const dateLine = document.querySelector("#date-line");
     const timezoneLine = document.querySelector("#timezone-line");
-    const sunriseLine = document.querySelector("#sunrise-line");
-    const sunsetLine = document.querySelector("#sunset-line");
     const sunProgressLine = document.querySelector("#sun-progress-line");
     const sunriseArcTime = document.querySelector("#sunrise-arc-time");
     const sunsetArcTime = document.querySelector("#sunset-arc-time");
@@ -3135,8 +3139,6 @@
       const sunriseDisplay = data.timings.Sunrise || "--:--";
       const sunsetDisplay = data.timings.Sunset || data.timings.Maghrib || "--:--";
 
-      sunriseLine.textContent = sunriseDisplay;
-      sunsetLine.textContent = sunsetDisplay;
       sunriseArcTime.textContent = sunriseDisplay;
       sunsetArcTime.textContent = sunsetDisplay;
 
@@ -3816,8 +3818,6 @@
       renderLocation(label);
       dateLine.textContent = "";
       timezoneLine.textContent = "Loading...";
-      sunriseLine.textContent = "--:--";
-      sunsetLine.textContent = "--:--";
       sunriseArcTime.textContent = "--:--";
       sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Loading...";
@@ -3838,8 +3838,6 @@
       renderMobileScheduleState("Unable to load salah times.");
       nextLine.textContent = "Please try another city or check your connection.";
       timezoneLine.textContent = "Unavailable";
-      sunriseLine.textContent = "--:--";
-      sunsetLine.textContent = "--:--";
       sunriseArcTime.textContent = "--:--";
       sunsetArcTime.textContent = "--:--";
       sunProgressLine.textContent = "Sun unavailable";
